@@ -16,6 +16,7 @@ Commentor shows comments that are stored outside source files. A source file `fo
 - `src/config.rs` — `AppConfig` (`last_file`, `remember_last_file`, `show_line_numbers`, `space_lines`, font sizes, theme/colour scheme, highlighting) + TOML load/save
 - `example/hello.rs` + `example/.comments.d/hello.rs.cmt` — simple standalone example used for testing
 - `src/.comments.d/*.cmt` — comments on commentor's own source; kept as samples, not used by the example task
+- `vocabulary.md` — shared names for the GUI parts (panes, gutter, tint band, link strip) and program parts (blocks, markers, bindings, settings); use its terms when discussing changes
 - `ask.sh` / `ask.d/` — task menu; each task is a script with `# id:`, `# group:` and `# desc:` headers
 - `.github/workflows/` — release pipelines copied from couchy (Linux/Windows, macOS Intel + Silicon, FreeBSD)
 - `commentor.svg` — README logo

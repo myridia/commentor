@@ -198,15 +198,15 @@ fn paint_pane(
         };
         let y0 = pane.min.y + start as f32 * row_h - offset;
         let y1 = pane.min.y + end as f32 * row_h - offset;
-        let top = y0 + 2.0;
-        let bottom = (y1 - 2.0).max(top + 1.0);
+        let top = y0 - 2.0;
+        let bottom = (y1 + 2.0).max(top + 1.0);
         let color = link_tint_color(index, selected == Some(index));
         painter.rect_filled(
             Rect::from_min_max(
-                Pos2::new(text_area.min.x + 3.0, top),
-                Pos2::new(text_area.max.x - 3.0, bottom),
+                Pos2::new(text_area.min.x, top),
+                Pos2::new(text_area.max.x - 4.0, bottom),
             ),
-            2.0,
+            3.0,
             color,
         );
     }
@@ -688,7 +688,8 @@ impl eframe::App for App {
             let comment_font = FontId::monospace(self.config.comment_font_size);
             let source_row_h = ui.fonts(|fonts| fonts.row_height(&source_font));
             let comment_row_h = ui.fonts(|fonts| fonts.row_height(&comment_font));
-            let gutter_w = 46.0;
+            let source_gutter = gutter_width(ui, &source_font, self.source.lines().count());
+            let comment_gutter = gutter_width(ui, &comment_font, self.comments.lines().count());
             let gap = 6.0;
             let strip_w = 44.0;
             let pane_w = ((area.width() - strip_w - gap * 2.0) / 2.0).max(160.0);
@@ -704,12 +705,12 @@ impl eframe::App for App {
                 Vec2::new(pane_w, pane_h),
             );
             let left_text = Rect::from_min_size(
-                Pos2::new(left_rect.min.x + gutter_w, left_rect.min.y),
-                Vec2::new((pane_w - gutter_w).max(20.0), pane_h),
+                Pos2::new(left_rect.min.x + source_gutter, left_rect.min.y),
+                Vec2::new((pane_w - source_gutter).max(20.0), pane_h),
             );
             let right_text = Rect::from_min_size(
-                Pos2::new(right_rect.min.x + gutter_w, right_rect.min.y),
-                Vec2::new((pane_w - gutter_w).max(20.0), pane_h),
+                Pos2::new(right_rect.min.x + comment_gutter, right_rect.min.y),
+                Vec2::new((pane_w - comment_gutter).max(20.0), pane_h),
             );
 
             let mut target_left = self.left_offset;
@@ -799,6 +800,7 @@ impl eframe::App for App {
                 "source_pane",
                 None,
             );
+            left_child.set_clip_rect(left_text);
             let highlight_source = self.config.highlight;
             let mut source_layouter =
                 |layouter_ui: &egui::Ui, string: &str, _wrap_width: f32| {
@@ -821,8 +823,8 @@ impl eframe::App for App {
                     job.wrap.max_width = f32::INFINITY;
                     layouter_ui.fonts(|fonts| fonts.layout_job(job))
                 };
-            let left_output = egui::ScrollArea::vertical()
-                .scroll_offset(Vec2::new(0.0, target_left))
+            let left_output = egui::ScrollArea::both()
+                .vertical_scroll_offset(target_left)
                 .show(&mut left_child, |ui| {
                     let editor = egui::TextEdit::multiline(&mut source_view)
                         .desired_width(f32::INFINITY)
@@ -830,10 +832,7 @@ impl eframe::App for App {
                         .margin(Vec2::ZERO)
                         .font(source_font.clone())
                         .layouter(&mut source_layouter);
-                    left_response = Some(ui.add_sized(
-                        Vec2::new(left_text.width(), left_text.height()),
-                        editor,
-                    ));
+                    left_response = Some(ui.add(editor));
                 });
 
             let mut comment_layouter =
@@ -853,8 +852,9 @@ impl eframe::App for App {
                 "comment_pane",
                 None,
             );
-            let right_output = egui::ScrollArea::vertical()
-                .scroll_offset(Vec2::new(0.0, target_right))
+            right_child.set_clip_rect(right_text);
+            let right_output = egui::ScrollArea::both()
+                .vertical_scroll_offset(target_right)
                 .show(&mut right_child, |ui| {
                     let editor = egui::TextEdit::multiline(&mut comments_edit)
                         .desired_width(f32::INFINITY)
@@ -862,10 +862,7 @@ impl eframe::App for App {
                         .margin(Vec2::ZERO)
                         .font(comment_font.clone())
                         .layouter(&mut comment_layouter);
-                    right_response = Some(ui.add_sized(
-                        Vec2::new(right_text.width(), right_text.height()),
-                        editor,
-                    ));
+                    right_response = Some(ui.add(editor));
                 });
 
             let new_left = left_output.state.offset.y;
@@ -961,4 +958,10 @@ fn main() -> Result<(), eframe::Error> {
             Ok(Box::new(app))
         }),
     )
+}
+
+fn gutter_width(ui: &egui::Ui, font: &FontId, lines: usize) -> f32 {
+    let digits = lines.max(1).to_string().len();
+    let digit = ui.fonts(|fonts| fonts.glyph_width(font, '0'));
+    (4.0 + digits as f32 * digit + 6.0).max(18.0)
 }

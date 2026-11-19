@@ -40,23 +40,26 @@ A classic top menu in a TopBottomPanel, built with egui::menu::bar and menu_butt
 @681-684
 The status line lives in a bottom TopBottomPanel, so the central panel is reserved for the two panes.
 
-@685-755
-Layout maths: two equal panes, a 44 pixel link strip with room for the bezier tails, 6 pixel gaps, and a 46 pixel gutter inside each pane. Scroll handoff maps the centre of one pane through the linked ranges into the other using each pane's own row height.
+@685-756
+Layout maths: two equal panes, a 44 pixel link strip with room for the bezier tails, 6 pixel gaps, and a gutter inside each pane that is sized from the widest line number plus a small pad. Scroll handoff maps the centre of one pane through the linked ranges into the other using each pane's own row height.
 
-@756-794
+@757-795
 Both panes and the link strip are painted before the text widgets are added, so the bands stay behind the text. The source pane is read-only but selectable; the comment pane is editable.
 
-@795-869
-Two ScrollAreas use their own font and row height. Each pane lives in a child UI with a distinct id source ("source_pane" / "comment_pane"), so egui does not report duplicate widget ids. The source editor always uses a layouter: it runs the highlighter when highlighting is enabled, otherwise it builds plain text. The comment editor uses a simple no-wrap layouter and shows the marker-free view of the .cmt file. Neither pane wraps, so every galley row stays on its physical line.
+@796-866
+Two ScrollAreas use their own font and row height. Each pane lives in a child UI with a distinct id source ("source_pane" / "comment_pane"), so egui does not report duplicate widget ids, and each child is clipped to its own text rect so long lines cannot bleed into the other pane. The editor is added left-aligned rather than with add_sized, which would centre oversized text and push it left over the source pane. The source editor always uses a layouter: it runs the highlighter when highlighting is enabled, otherwise it builds plain text. The comment editor uses a simple no-wrap layouter and shows the marker-free view of the .cmt file. Neither pane wraps, so every galley row stays on its physical line.
 
-@871-916
+@868-913
 Click selection: a click on a source line, a comment line or a curve sets the selected block, using the row height of that pane. Clicking the strip picks the nearest curve by vertical distance.
 
-@917-928
+@914-925
 Scroll detection compares the new offsets with the previous frame. applied_sync suppresses the echo from a scroll we caused ourselves.
 
-@929-936
+@926-933
 Any edit to the visible comment text is mapped back into the canonical file with restore_markers, then triggers a reparse so new markers and changed ranges appear in the same frame.
 
-@937-964
+@934-961
 Entry point. The window is 1100 by 760; settings are loaded first, then a command-line path is opened, otherwise the remembered last file if that setting is enabled.
+
+@963-967
+Gutter width helper: the digit count comes from the line total, the digit width from the active monospace font, and the result adds 4 pixels of left pad and 6 pixels of breathing room before the text, never below 18.
