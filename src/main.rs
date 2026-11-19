@@ -507,24 +507,18 @@ fn paint_links(
         let color = link_stroke_color(index, is_selected);
         let width = if is_selected { 2.4 } else { 1.5 };
 
-        painter.add(egui::Shape::convex_polygon(
-            vec![
-                Pos2::new(x0 + 2.0, left_y0),
-                Pos2::new(x0 + 2.0, left_y1),
-                Pos2::new(x1 - 2.0, right_y1),
-                Pos2::new(x1 - 2.0, right_y0),
-            ],
-            if show_colors {
-                link_tint_color(index, is_selected)
-            } else {
-                Color32::TRANSPARENT
-            },
-            if show_colors {
-                Stroke::NONE
-            } else {
-                Stroke::new(1.0, color)
-            },
-        ));
+        if show_colors {
+            painter.add(egui::Shape::convex_polygon(
+                vec![
+                    Pos2::new(x0 + 2.0, left_y0),
+                    Pos2::new(x0 + 2.0, left_y1),
+                    Pos2::new(x1 - 2.0, right_y1),
+                    Pos2::new(x1 - 2.0, right_y0),
+                ],
+                link_tint_color(index, is_selected),
+                Stroke::NONE,
+            ));
+        }
 
         for &(from_y, to_y) in &[(left_y0, right_y0), (left_y1, right_y1)] {
             painter.add(CubicBezierShape {

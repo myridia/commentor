@@ -63,7 +63,7 @@ Shared names for the parts of the commentor GUI and the code behind them. Use th
 | **Selected block** | The block currently highlighted, stored as an index into `App::blocks`. | `App::selected`, `select_relative` |
 | **Settings** | The persistent `AppConfig` values, saved to `~/.commentor/config.toml`. | `config.rs` |
 | **Wrap comment text** | The setting that lets the comment pane wrap long lines. The source pane never wraps. Wrapped rows still share one logical line number. | `AppConfig::comment_wrap`, `comment_wrap_w` |
-| **Show link block colors** | The setting that toggles only the filled backgrounds of tint bands and the strip's range. Block outlines, curves, tails and selection stay visible either way. | `AppConfig::show_link_colors`, `paint_scrolled_layers`, `paint_links` |
+| **Show link block colors** | The setting that toggles only the filled backgrounds of tint bands and the strip's range. The pane outline, the two curves and their tails stay visible either way, so there is one border line per block. | `AppConfig::show_link_colors`, `paint_scrolled_layers`, `paint_links` |
 | **Theme** | `Dark` or `Light`, applied to egui visuals. | `AppConfig::theme`, `apply_theme` |
 | **Colour scheme / accent** | The accent used for selection, links and hover states: Blue, Green, Purple, Warm, Pink or Neutral. It is not the per-block tint palette. | `AppConfig::color_scheme`, `scheme_accent` |
 | **Syntax palette** | The keyword/string/comment/number/function/type/macro colours used by the highlighter: Default, Vivid or Soft. | `highlight::Palette`, `AppConfig::syntax_theme` |
