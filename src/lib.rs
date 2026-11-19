@@ -72,10 +72,11 @@ pub fn map_line(line: f32, from_source: bool, blocks: &[Block]) -> f32 {
                 block.src_end as f32,
             )
         };
-        if line >= from_start && line <= from_end {
-            let from_len = (from_end - from_start).max(1.0);
-            let to_len = (to_end - to_start).max(1.0);
-            return to_start + ((line - from_start) / from_len) * to_len;
+        let from_len = (from_end - from_start).max(1.0);
+        let to_len = (to_end - to_start).max(1.0);
+        if line >= from_start && line < from_end {
+            let fraction = ((line - from_start) / from_len).clamp(0.0, 1.0);
+            return to_start + fraction * to_len;
         }
     }
     line

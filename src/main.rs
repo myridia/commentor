@@ -233,22 +233,34 @@ impl LineLayout {
     }
 }
 
-fn paint_pane(
-    ui: &mut egui::Ui,
-    pane: Rect,
-    text_area: Rect,
-    lines: &[String],
-    blocks: &[Block],
-    selected: Option<usize>,
-    offset: f32,
-    layout: &LineLayout,
-    font_id: &FontId,
-    source_side: bool,
-    show_line_numbers: bool,
-) {
+fn paint_pane_background(ui: &mut egui::Ui, pane: Rect, text_area: Rect) {
+    let old_clip = ui.clip_rect();
     ui.set_clip_rect(pane);
     let painter = ui.painter();
     painter.rect_filled(pane, 2.0, ui.visuals().extreme_bg_color);
+    painter.rect_filled(
+        Rect::from_min_max(
+            Pos2::new(pane.min.x, pane.min.y),
+            Pos2::new(text_area.min.x, pane.max.y),
+        ),
+        0.0,
+        ui.visuals().faint_bg_color,
+    );
+    ui.set_clip_rect(old_clip);
+}
+
+fn paint_scrolled_layers(
+    ui: &egui::Ui,
+    content_top: f32,
+    text_left: f32,
+    text_right: f32,
+    lines: &[String],
+    blocks: &[Block],
+    selected: Option<usize>,
+    layout: &LineLayout,
+    source_side: bool,
+) {
+    let painter = ui.painter();
 
     for (index, block) in blocks.iter().enumerate() {
         let (start, end) = if source_side {
@@ -264,49 +276,46 @@ fn paint_pane(
             }
             (block.cmt_start, end)
         };
-        let y0 = pane.min.y + layout.top(start as f32) - offset;
-        let y1 = pane.min.y + layout.top(end as f32) - offset;
+        let y0 = content_top + layout.top(start as f32);
+        let y1 = content_top + layout.top(end as f32);
         let top = y0 - 2.0;
         let bottom = (y1 + 2.0).max(top + 1.0);
         let color = link_tint_color(index, selected == Some(index));
         painter.rect_filled(
-            Rect::from_min_max(
-                Pos2::new(text_area.min.x, top),
-                Pos2::new(text_area.max.x - 4.0, bottom),
-            ),
+            Rect::from_min_max(Pos2::new(text_left, top), Pos2::new(text_right - 4.0, bottom)),
             3.0,
             color,
         );
     }
+}
 
-    painter.rect_filled(
-        Rect::from_min_max(
-            Pos2::new(pane.min.x, pane.min.y),
-            Pos2::new(text_area.min.x, pane.max.y),
-        ),
-        0.0,
-        ui.visuals().faint_bg_color,
-    );
-
-    if show_line_numbers {
-        let first = layout.line_at(offset);
-        let count = (pane.height() / layout.row_h).ceil() as usize + 2;
-        for line in first..(first + count).min(lines.len()) {
-            let y = pane.min.y + layout.top(line as f32) - offset;
-            if y > pane.max.y {
-                break;
-            }
-            painter.text(
-                Pos2::new(pane.min.x + 4.0, y),
-                Align2::LEFT_TOP,
-                (line + 1).to_string(),
-                font_id.clone(),
-                Color32::GRAY,
-            );
+fn paint_line_numbers(
+    ui: &mut egui::Ui,
+    pane: Rect,
+    offset: f32,
+    layout: &LineLayout,
+    font_id: &FontId,
+    line_count: usize,
+) {
+    let old_clip = ui.clip_rect();
+    ui.set_clip_rect(pane);
+    let painter = ui.painter();
+    let first = layout.line_at(offset);
+    let count = (pane.height() / layout.row_h).ceil() as usize + 2;
+    for line in first..(first + count).min(line_count) {
+        let y = pane.min.y + layout.top(line as f32) - offset;
+        if y > pane.max.y {
+            break;
         }
+        painter.text(
+            Pos2::new(pane.min.x + 4.0, y),
+            Align2::LEFT_TOP,
+            (line + 1).to_string(),
+            font_id.clone(),
+            Color32::GRAY,
+        );
     }
-    let screen_rect = ui.ctx().screen_rect();
-    ui.set_clip_rect(screen_rect);
+    ui.set_clip_rect(old_clip);
 }
 
 fn paint_links(
@@ -862,44 +871,26 @@ impl eframe::App for App {
 
             let strip_response = ui.allocate_rect(strip_rect, egui::Sense::click());
 
-            paint_pane(
-                ui,
-                left_rect,
-                left_text,
-                &source_lines,
-                &blocks,
-                selected,
-                target_left,
-                &source_layout,
-                &source_font,
-                true,
-                self.config.show_line_numbers,
-            );
-            paint_pane(
-                ui,
-                right_rect,
-                right_text,
-                &comment_lines,
-                &blocks,
-                selected,
-                target_right,
-                &comment_layout,
-                &comment_font,
-                false,
-                self.config.show_line_numbers,
-            );
-            paint_links(
-                ui,
-                strip_rect,
-                left_text,
-                right_text,
-                &blocks,
-                selected,
-                target_left,
-                target_right,
-                &source_layout,
-                &comment_layout,
-            );
+            paint_pane_background(ui, left_rect, left_text);
+            paint_pane_background(ui, right_rect, right_text);
+            if self.config.show_line_numbers {
+                paint_line_numbers(
+                    ui,
+                    left_rect,
+                    target_left,
+                    &source_layout,
+                    &source_font,
+                    source_lines.len(),
+                );
+                paint_line_numbers(
+                    ui,
+                    right_rect,
+                    target_right,
+                    &comment_layout,
+                    &comment_font,
+                    comment_lines.len(),
+                );
+            }
 
             let mut left_response = None;
             let mut left_child = ui.child_ui_with_id_source(
@@ -934,6 +925,17 @@ impl eframe::App for App {
             let left_output = egui::ScrollArea::both()
                 .vertical_scroll_offset(target_left)
                 .show(&mut left_child, |ui| {
+                    paint_scrolled_layers(
+                        ui,
+                        left_text.min.y - target_left,
+                        left_text.min.x,
+                        left_text.max.x,
+                        &source_lines,
+                        &blocks,
+                        selected,
+                        &source_layout,
+                        true,
+                    );
                     let editor = egui::TextEdit::multiline(&mut source_view)
                         .desired_width(f32::INFINITY)
                         .frame(false)
@@ -971,6 +973,17 @@ impl eframe::App for App {
             let right_output = right_area
                 .vertical_scroll_offset(target_right)
                 .show(&mut right_child, |ui| {
+                    paint_scrolled_layers(
+                        ui,
+                        right_text.min.y - target_right,
+                        right_text.min.x,
+                        right_text.max.x,
+                        &comment_lines,
+                        &blocks,
+                        selected,
+                        &comment_layout,
+                        false,
+                    );
                     let editor = egui::TextEdit::multiline(&mut comments_edit)
                         .desired_width(comment_wrap_width)
                         .frame(false)
@@ -982,6 +995,19 @@ impl eframe::App for App {
 
             let new_left = left_output.state.offset.y;
             let new_right = right_output.state.offset.y;
+
+            paint_links(
+                ui,
+                strip_rect,
+                left_text,
+                right_text,
+                &blocks,
+                selected,
+                new_left,
+                new_right,
+                &source_layout,
+                &comment_layout,
+            );
 
             if let Some(response) = left_response {
                 if response.clicked() {

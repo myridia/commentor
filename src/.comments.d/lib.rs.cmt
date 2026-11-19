@@ -1,5 +1,5 @@
 @1-9
-The pure model: no GUI types here. Block holds a source range and the matching comment range, both as half-open line indices.
+The pure model: no GUI types here. Block holds a source range and the matching comment range, both as 0-based half-open line indices.
 
 @11-15
 pair_path appends .cmt to the full source filename inside .comments.d, so foo.rs and foo.py never map to the same comment file.
@@ -10,17 +10,17 @@ parse_marker accepts @N or @N-M on its own line. Numbers are 1-based; the functi
 @31-56
 parse_blocks scans the comment text for markers. Each block runs from its marker line to the line before the next marker; the final block runs to the end of the file.
 
-@58-82
-map_line translates a line from one side to the other by finding the containing block and keeping the relative position inside it. Lines outside every block are returned unchanged.
+@58-83
+map_line translates a line from one side to the other by finding the containing block and keeping the relative position inside it. The half-open range check keeps a line exactly on the next marker out of the previous block. Lines outside every block are returned unchanged.
 
-@84-95
+@85-96
 map_scroll maps the centre of the viewport instead of the top line, so scrolling feels anchored in the middle of the screen like in meld. It takes separate source and comment row heights because the two panes can use different font sizes.
 
-@97-106
+@98-108
 is_marker_line and hide_markers keep @ lines in the file but out of the visible comment pane: marker lines are blanked while every physical line number stays the same.
 
-@108-151
+@109-153
 restore_markers diffs the edited view against that blanked copy and puts the original markers back, reinserting any that fell inside the edited region.
 
-@153-172
+@154-173
 normalize_spacing enforces the configured number of visible blank lines before every marker except the first. The hidden marker line already contributes one blank, so it inserts space_lines - 1 extra lines and removes any extra blank lines that were there before.
