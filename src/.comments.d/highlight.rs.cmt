@@ -1,0 +1,38 @@
+@1-3
+Only egui text types and std::path are needed: the result is a LayoutJob that TextEdit can render, plus a font, colours and the language enum.
+
+@5-22
+The supported languages. Plain is the fallback when detection fails or the file type is unknown.
+
+@24-68
+from_setting resolves the value stored in config.toml; from_path maps common file extensions to a language so auto detection needs no extra dependency. Some extensions are grouped, for example h with C and hpp with C++.
+
+@70-110
+Syntax rules per language: which line-comment prefixes to look for, whether /* */ or <!-- --> block comments exist, and which characters start strings. Shell, Python and JavaScript also accept backticks.
+
+@112-197
+Keyword tables per language. SQL is matched case-insensitively; JavaScript/TypeScript and shell allow $ in identifiers. Keeping the tables local avoids pulling in a full grammar crate.
+
+@199-208
+A Palette groups the seven token colours used by the highlighter. The plain text colour still comes from the active egui theme.
+
+@210-269
+Palette::new returns default, vivid or soft colours for dark or light mode. The lighter variants use darker accents so they stay readable on a light background.
+
+@271-397
+layout_job is a small line-oriented lexer. It walks the text, switches into block-comment mode across lines, handles Python triple-quoted strings, and classifies strings, numbers, identifiers, keywords, macros, function calls and type names. Every fragment is appended with the same monospace font so rows still align with the gutter.
+
+@399-412
+append skips empty fragments and copies the font into each TextFormat.
+
+@414-431
+scan_string finds the closing quote while respecting backslash escapes; if no closing quote is found on the line the caller decides whether the rest of the line is a string or a lone quote.
+
+@433-443
+scan_number consumes digits, letters, underscores and dots, which covers decimal, hexadecimal, binary and float literals without swallowing following operators.
+
+@445-459
+is_word_start and scan_word define identifier boundaries, including the optional leading $ for shell and JavaScript family languages.
+
+@461-491
+word_color gives keywords priority, then recognises Rust-style macro calls via a trailing !, function calls via a following (, and type-like names by their leading uppercase letter. Everything else uses the theme's plain text colour.

@@ -13,8 +13,14 @@ parse_blocks scans the comment text for markers. Each block runs from its marker
 @58-82
 map_line translates a line from one side to the other by finding the containing block and keeping the relative position inside it. Lines outside every block are returned unchanged.
 
-@84-94
-map_scroll maps the centre of the viewport instead of the top line, so scrolling feels anchored in the middle of the screen like in meld.
+@84-95
+map_scroll maps the centre of the viewport instead of the top line, so scrolling feels anchored in the middle of the screen like in meld. It takes separate source and comment row heights because the two panes can use different font sizes.
 
-@96-150
-The marker helpers keep @ lines in the file but out of the visible comment pane. hide_markers blanks marker lines while preserving line numbers; restore_markers diffs the edited view against that blanked copy and puts the original markers back, reinserting any that fell inside the edited region.
+@97-106
+is_marker_line and hide_markers keep @ lines in the file but out of the visible comment pane: marker lines are blanked while every physical line number stays the same.
+
+@108-151
+restore_markers diffs the edited view against that blanked copy and puts the original markers back, reinserting any that fell inside the edited region.
+
+@153-172
+normalize_spacing enforces the configured number of visible blank lines before every marker except the first. The hidden marker line already contributes one blank, so it inserts space_lines - 1 extra lines and removes any extra blank lines that were there before.

@@ -1,6 +1,9 @@
 mod config;
+mod highlight;
 
-use commentor::{hide_markers, map_scroll, pair_path, parse_blocks, restore_markers, Block};
+use commentor::{
+    hide_markers, map_scroll, normalize_spacing, pair_path, parse_blocks, restore_markers, Block,
+};
 use config::AppConfig;
 use eframe::egui;
 use egui::epaint::CubicBezierShape;
@@ -42,6 +45,107 @@ fn link_stroke_color(index: usize, selected: bool) -> Color32 {
 fn link_tint_color(index: usize, selected: bool) -> Color32 {
     let (r, g, b) = link_rgb(index);
     Color32::from_rgba_unmultiplied(r, g, b, if selected { 90 } else { 48 })
+}
+
+const THEMES: [(&str, &str); 2] = [("dark", "Dark"), ("light", "Light")];
+
+const COLOR_SCHEMES: [(&str, &str); 6] = [
+    ("blue", "Blue"),
+    ("green", "Green"),
+    ("purple", "Purple"),
+    ("warm", "Warm"),
+    ("pink", "Pink"),
+    ("neutral", "Neutral"),
+];
+
+const LANGUAGES: [(&str, &str); 16] = [
+    ("auto", "Auto detect"),
+    ("rust", "Rust"),
+    ("python", "Python"),
+    ("javascript", "JavaScript"),
+    ("typescript", "TypeScript"),
+    ("c", "C"),
+    ("cpp", "C++"),
+    ("go", "Go"),
+    ("java", "Java"),
+    ("json", "JSON"),
+    ("toml", "TOML"),
+    ("shell", "Shell"),
+    ("html", "HTML"),
+    ("css", "CSS"),
+    ("sql", "SQL"),
+    ("plain", "Plain text"),
+];
+
+const SYNTAX_THEMES: [(&str, &str); 3] = [
+    ("default", "Default"),
+    ("vivid", "Vivid"),
+    ("soft", "Soft"),
+];
+
+fn scheme_accent(name: &str, dark: bool) -> Color32 {
+    match name {
+        "green" => {
+            if dark {
+                Color32::from_rgb(94, 200, 150)
+            } else {
+                Color32::from_rgb(20, 130, 90)
+            }
+        }
+        "purple" => {
+            if dark {
+                Color32::from_rgb(178, 150, 240)
+            } else {
+                Color32::from_rgb(110, 70, 190)
+            }
+        }
+        "warm" => {
+            if dark {
+                Color32::from_rgb(230, 160, 90)
+            } else {
+                Color32::from_rgb(180, 100, 30)
+            }
+        }
+        "pink" => {
+            if dark {
+                Color32::from_rgb(232, 140, 190)
+            } else {
+                Color32::from_rgb(190, 60, 130)
+            }
+        }
+        "neutral" => {
+            if dark {
+                Color32::from_rgb(160, 168, 178)
+            } else {
+                Color32::from_rgb(90, 98, 108)
+            }
+        }
+        _ => {
+            if dark {
+                Color32::from_rgb(92, 150, 214)
+            } else {
+                Color32::from_rgb(30, 110, 190)
+            }
+        }
+    }
+}
+
+fn apply_theme(ctx: &egui::Context, config: &AppConfig) {
+    let dark = config.theme != "light";
+    let mut visuals = if dark {
+        egui::Visuals::dark()
+    } else {
+        egui::Visuals::light()
+    };
+    let accent = scheme_accent(&config.color_scheme, dark);
+    let alpha = |value: u8| Color32::from_rgba_unmultiplied(accent.r(), accent.g(), accent.b(), value);
+    visuals.selection.bg_fill = alpha(if dark { 90 } else { 60 });
+    visuals.selection.stroke = Stroke::new(1.0, accent);
+    visuals.hyperlink_color = accent;
+    visuals.widgets.hovered.bg_fill = alpha(if dark { 60 } else { 36 });
+    visuals.widgets.active.bg_fill = alpha(if dark { 90 } else { 54 });
+    visuals.widgets.noninteractive.bg_stroke = Stroke::new(1.0, alpha(if dark { 70 } else { 50 }));
+    ctx.set_visuals(visuals);
 }
 
 #[derive(Default)]
@@ -94,13 +198,15 @@ fn paint_pane(
         };
         let y0 = pane.min.y + start as f32 * row_h - offset;
         let y1 = pane.min.y + end as f32 * row_h - offset;
+        let top = y0 + 2.0;
+        let bottom = (y1 - 2.0).max(top + 1.0);
         let color = link_tint_color(index, selected == Some(index));
         painter.rect_filled(
             Rect::from_min_max(
-                Pos2::new(text_area.min.x, y0),
-                Pos2::new(text_area.max.x, y1),
+                Pos2::new(text_area.min.x + 3.0, top),
+                Pos2::new(text_area.max.x - 3.0, bottom),
             ),
-            0.0,
+            2.0,
             color,
         );
     }
@@ -141,7 +247,8 @@ fn paint_links(
     selected: Option<usize>,
     left_offset: f32,
     right_offset: f32,
-    row_h: f32,
+    left_row_h: f32,
+    right_row_h: f32,
 ) {
     let x0 = left.max.x;
     let x1 = right.min.x;
@@ -158,20 +265,20 @@ fn paint_links(
     let half = 4.0;
 
     for (index, block) in blocks.iter().enumerate() {
-        let left_y0 = left.min.y + block.src_start as f32 * row_h - left_offset;
-        let left_y1 = left.min.y + block.src_end as f32 * row_h - left_offset;
-        let right_y0 = right.min.y + block.cmt_start as f32 * row_h - right_offset;
-        let right_y1 = right.min.y + block.cmt_end as f32 * row_h - right_offset;
+        let left_y0 = left.min.y + block.src_start as f32 * left_row_h - left_offset;
+        let left_y1 = left.min.y + block.src_end as f32 * left_row_h - left_offset;
+        let right_y0 = right.min.y + block.cmt_start as f32 * right_row_h - right_offset;
+        let right_y1 = right.min.y + block.cmt_end as f32 * right_row_h - right_offset;
         let is_selected = selected == Some(index);
         let color = link_stroke_color(index, is_selected);
         let width = if is_selected { 2.4 } else { 1.5 };
 
         painter.add(egui::Shape::convex_polygon(
             vec![
-                Pos2::new(x0, left_y0),
-                Pos2::new(x0, left_y1),
-                Pos2::new(x1, right_y1),
-                Pos2::new(x1, right_y0),
+                Pos2::new(x0 + 2.0, left_y0),
+                Pos2::new(x0 + 2.0, left_y1),
+                Pos2::new(x1 - 2.0, right_y1),
+                Pos2::new(x1 - 2.0, right_y0),
             ],
             link_tint_color(index, false),
             Stroke::NONE,
@@ -221,7 +328,8 @@ impl App {
                 self.source = text;
                 self.source_path = Some(path.clone());
                 let pair = pair_path(&path);
-                self.comments = fs::read_to_string(&pair).unwrap_or_default();
+                let comments = fs::read_to_string(&pair).unwrap_or_default();
+                self.comments = normalize_spacing(&comments, self.config.space_lines);
                 self.comment_path = Some(pair);
                 self.status = format!("opened {}", path.display());
                 self.refresh();
@@ -279,6 +387,46 @@ impl App {
         }
     }
 
+    fn set_space_lines(&mut self, value: usize) {
+        let value = value.clamp(1, 8);
+        if self.config.space_lines == value {
+            return;
+        }
+        self.config.space_lines = value;
+        self.comments = normalize_spacing(&self.comments, value);
+        self.refresh();
+        self.save_settings();
+    }
+
+    fn set_source_font(&mut self, value: f32) {
+        let value = value.clamp(8.0, 32.0);
+        if (self.config.source_font_size - value).abs() < f32::EPSILON {
+            return;
+        }
+        self.config.source_font_size = value;
+        self.save_settings();
+    }
+
+    fn set_comment_font(&mut self, value: f32) {
+        let value = value.clamp(8.0, 32.0);
+        if (self.config.comment_font_size - value).abs() < f32::EPSILON {
+            return;
+        }
+        self.config.comment_font_size = value;
+        self.save_settings();
+    }
+
+    fn active_language(&self) -> highlight::Language {
+        if self.config.language == "auto" {
+            self.source_path
+                .as_deref()
+                .map(highlight::Language::from_path)
+                .unwrap_or(highlight::Language::Plain)
+        } else {
+            highlight::Language::from_setting(&self.config.language)
+        }
+    }
+
     fn select_relative(&mut self, step: isize) {
         if self.blocks.is_empty() {
             self.selected = None;
@@ -306,6 +454,8 @@ fn open_target(target: &str) {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        apply_theme(ctx, &self.config);
+
         if ctx.input(|input| input.modifiers.ctrl && input.key_pressed(egui::Key::S)) {
             self.save();
         }
@@ -364,6 +514,145 @@ impl eframe::App for App {
                         self.save_settings();
                     }
                     ui.separator();
+                    ui.horizontal(|ui| {
+                        ui.label("Theme:");
+                        egui::ComboBox::from_id_source("theme")
+                            .selected_text(
+                                THEMES
+                                    .iter()
+                                    .find(|(value, _)| *value == self.config.theme.as_str())
+                                    .map(|(_, label)| *label)
+                                    .unwrap_or("Dark"),
+                            )
+                            .show_ui(ui, |ui| {
+                                for (value, label) in THEMES {
+                                    if ui
+                                        .selectable_value(
+                                            &mut self.config.theme,
+                                            value.to_string(),
+                                            label,
+                                        )
+                                        .changed()
+                                    {
+                                        self.save_settings();
+                                    }
+                                }
+                            });
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Colors:");
+                        egui::ComboBox::from_id_source("color_scheme")
+                            .selected_text(
+                                COLOR_SCHEMES
+                                    .iter()
+                                    .find(|(value, _)| *value == self.config.color_scheme.as_str())
+                                    .map(|(_, label)| *label)
+                                    .unwrap_or("Blue"),
+                            )
+                            .show_ui(ui, |ui| {
+                                for (value, label) in COLOR_SCHEMES {
+                                    if ui
+                                        .selectable_value(
+                                            &mut self.config.color_scheme,
+                                            value.to_string(),
+                                            label,
+                                        )
+                                        .changed()
+                                    {
+                                        self.save_settings();
+                                    }
+                                }
+                            });
+                    });
+                    ui.separator();
+                    if ui
+                        .checkbox(&mut self.config.highlight, "Syntax highlighting")
+                        .changed()
+                    {
+                        self.save_settings();
+                    }
+                    ui.horizontal(|ui| {
+                        ui.label("Language:");
+                        egui::ComboBox::from_id_source("language")
+                            .selected_text(
+                                LANGUAGES
+                                    .iter()
+                                    .find(|(value, _)| *value == self.config.language.as_str())
+                                    .map(|(_, label)| *label)
+                                    .unwrap_or("Auto detect"),
+                            )
+                            .show_ui(ui, |ui| {
+                                for (value, label) in LANGUAGES {
+                                    if ui
+                                        .selectable_value(
+                                            &mut self.config.language,
+                                            value.to_string(),
+                                            label,
+                                        )
+                                        .changed()
+                                    {
+                                        self.save_settings();
+                                    }
+                                }
+                            });
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Highlight:");
+                        egui::ComboBox::from_id_source("syntax_theme")
+                            .selected_text(
+                                SYNTAX_THEMES
+                                    .iter()
+                                    .find(|(value, _)| *value == self.config.syntax_theme.as_str())
+                                    .map(|(_, label)| *label)
+                                    .unwrap_or("Default"),
+                            )
+                            .show_ui(ui, |ui| {
+                                for (value, label) in SYNTAX_THEMES {
+                                    if ui
+                                        .selectable_value(
+                                            &mut self.config.syntax_theme,
+                                            value.to_string(),
+                                            label,
+                                        )
+                                        .changed()
+                                    {
+                                        self.save_settings();
+                                    }
+                                }
+                            });
+                    });
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        ui.label("Space lines:");
+                        if ui.small_button("-").clicked() {
+                            self.set_space_lines(self.config.space_lines.saturating_sub(1));
+                        }
+                        ui.label(self.config.space_lines.to_string());
+                        if ui.small_button("+").clicked() {
+                            self.set_space_lines(self.config.space_lines + 1);
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Source font:");
+                        if ui.small_button("-").clicked() {
+                            self.set_source_font(self.config.source_font_size - 1.0);
+                        }
+                        ui.label(format!("{:.0}", self.config.source_font_size));
+                        if ui.small_button("+").clicked() {
+                            self.set_source_font(self.config.source_font_size + 1.0);
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Comment font:");
+                        if ui.small_button("-").clicked() {
+                            self.set_comment_font(self.config.comment_font_size - 1.0);
+                        }
+                        ui.label(format!("{:.0}", self.config.comment_font_size));
+                        if ui.small_button("+").clicked() {
+                            self.set_comment_font(self.config.comment_font_size + 1.0);
+                        }
+                    });
+                    ui.separator();
                     if ui.button("Open Settings File").clicked() {
                         if let Ok(path) = config::config_path() {
                             let target = path.to_string_lossy().into_owned();
@@ -395,8 +684,10 @@ impl eframe::App for App {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             let area = ui.available_rect_before_wrap();
-            let font_id = FontId::monospace(13.0);
-            let row_h = ui.fonts(|fonts| fonts.row_height(&font_id));
+            let source_font = FontId::monospace(self.config.source_font_size);
+            let comment_font = FontId::monospace(self.config.comment_font_size);
+            let source_row_h = ui.fonts(|fonts| fonts.row_height(&source_font));
+            let comment_row_h = ui.fonts(|fonts| fonts.row_height(&comment_font));
             let gutter_w = 46.0;
             let gap = 6.0;
             let strip_w = 44.0;
@@ -425,11 +716,25 @@ impl eframe::App for App {
             let mut target_right = self.right_offset;
             let mut applied_sync = false;
             if self.scroll_from == 1 {
-                target_right = map_scroll(self.left_offset, true, &self.blocks, row_h, pane_h);
+                target_right = map_scroll(
+                    self.left_offset,
+                    true,
+                    &self.blocks,
+                    source_row_h,
+                    comment_row_h,
+                    pane_h,
+                );
                 self.scroll_from = 0;
                 applied_sync = true;
             } else if self.scroll_from == 2 {
-                target_left = map_scroll(self.right_offset, false, &self.blocks, row_h, pane_h);
+                target_left = map_scroll(
+                    self.right_offset,
+                    false,
+                    &self.blocks,
+                    comment_row_h,
+                    source_row_h,
+                    pane_h,
+                );
                 self.scroll_from = 0;
                 applied_sync = true;
             }
@@ -439,8 +744,13 @@ impl eframe::App for App {
             let source_lines: Vec<String> = self.source.lines().map(str::to_string).collect();
             let comment_lines: Vec<String> = self.comments.lines().map(str::to_string).collect();
             let comments_display = hide_markers(&self.comments);
-            let mut source_edit = self.source.clone();
+            let source_edit = self.source.clone();
+            let mut source_view: &str = &source_edit;
             let mut comments_edit = comments_display.clone();
+            let dark = self.config.theme != "light";
+            let syntax_palette = highlight::Palette::new(dark, &self.config.syntax_theme);
+            let language = self.active_language();
+            let plain_color = ui.visuals().widgets.inactive.text_color();
             let strip_response = ui.allocate_rect(strip_rect, egui::Sense::click());
 
             paint_pane(
@@ -451,8 +761,8 @@ impl eframe::App for App {
                 &blocks,
                 selected,
                 target_left,
-                row_h,
-                &font_id,
+                source_row_h,
+                &source_font,
                 true,
                 self.config.show_line_numbers,
             );
@@ -464,8 +774,8 @@ impl eframe::App for App {
                 &blocks,
                 selected,
                 target_right,
-                row_h,
-                &font_id,
+                comment_row_h,
+                &comment_font,
                 false,
                 self.config.show_line_numbers,
             );
@@ -478,30 +788,71 @@ impl eframe::App for App {
                 selected,
                 target_left,
                 target_right,
-                row_h,
+                source_row_h,
+                comment_row_h,
             );
 
             let mut left_response = None;
-            let mut left_child =
-                ui.child_ui(left_text, egui::Layout::top_down(egui::Align::Min), None);
+            let mut left_child = ui.child_ui_with_id_source(
+                left_text,
+                egui::Layout::top_down(egui::Align::Min),
+                "source_pane",
+                None,
+            );
+            let highlight_source = self.config.highlight;
+            let mut source_layouter =
+                |layouter_ui: &egui::Ui, string: &str, _wrap_width: f32| {
+                    let mut job = if highlight_source {
+                        highlight::layout_job(
+                            string,
+                            &source_font,
+                            language,
+                            &syntax_palette,
+                            plain_color,
+                        )
+                    } else {
+                        egui::text::LayoutJob::simple(
+                            string.to_owned(),
+                            source_font.clone(),
+                            plain_color,
+                            f32::INFINITY,
+                        )
+                    };
+                    job.wrap.max_width = f32::INFINITY;
+                    layouter_ui.fonts(|fonts| fonts.layout_job(job))
+                };
             let left_output = egui::ScrollArea::vertical()
                 .scroll_offset(Vec2::new(0.0, target_left))
                 .show(&mut left_child, |ui| {
-                    let editor = egui::TextEdit::multiline(&mut source_edit)
+                    let editor = egui::TextEdit::multiline(&mut source_view)
                         .desired_width(f32::INFINITY)
-                        .interactive(false)
                         .frame(false)
                         .margin(Vec2::ZERO)
-                        .font(font_id.clone());
+                        .font(source_font.clone())
+                        .layouter(&mut source_layouter);
                     left_response = Some(ui.add_sized(
                         Vec2::new(left_text.width(), left_text.height()),
                         editor,
                     ));
                 });
 
+            let mut comment_layouter =
+                |layouter_ui: &egui::Ui, string: &str, _wrap_width: f32| {
+                    let job = egui::text::LayoutJob::simple(
+                        string.to_owned(),
+                        comment_font.clone(),
+                        plain_color,
+                        f32::INFINITY,
+                    );
+                    layouter_ui.fonts(|fonts| fonts.layout_job(job))
+                };
             let mut right_response = None;
-            let mut right_child =
-                ui.child_ui(right_text, egui::Layout::top_down(egui::Align::Min), None);
+            let mut right_child = ui.child_ui_with_id_source(
+                right_text,
+                egui::Layout::top_down(egui::Align::Min),
+                "comment_pane",
+                None,
+            );
             let right_output = egui::ScrollArea::vertical()
                 .scroll_offset(Vec2::new(0.0, target_right))
                 .show(&mut right_child, |ui| {
@@ -509,7 +860,8 @@ impl eframe::App for App {
                         .desired_width(f32::INFINITY)
                         .frame(false)
                         .margin(Vec2::ZERO)
-                        .font(font_id.clone());
+                        .font(comment_font.clone())
+                        .layouter(&mut comment_layouter);
                     right_response = Some(ui.add_sized(
                         Vec2::new(right_text.width(), right_text.height()),
                         editor,
@@ -522,7 +874,8 @@ impl eframe::App for App {
             if let Some(response) = left_response {
                 if response.clicked() {
                     if let Some(point) = response.interact_pointer_pos() {
-                        let line = ((point.y - left_text.min.y + new_left) / row_h) as usize;
+                        let line =
+                            ((point.y - left_text.min.y + new_left) / source_row_h) as usize;
                         self.selected = blocks.iter().position(|block| {
                             line >= block.src_start && line <= block.src_end
                         });
@@ -532,7 +885,8 @@ impl eframe::App for App {
             if let Some(response) = right_response {
                 if response.clicked() {
                     if let Some(point) = response.interact_pointer_pos() {
-                        let line = ((point.y - right_text.min.y + new_right) / row_h) as usize;
+                        let line =
+                            ((point.y - right_text.min.y + new_right) / comment_row_h) as usize;
                         self.selected = blocks.iter().position(|block| {
                             line >= block.cmt_start && line <= block.cmt_end
                         });
@@ -545,10 +899,10 @@ impl eframe::App for App {
                     let mut best_distance = f32::MAX;
                     for (index, block) in blocks.iter().enumerate() {
                         let left_y = left_text.min.y
-                            + (block.src_start + block.src_end) as f32 * 0.5 * row_h
+                            + (block.src_start + block.src_end) as f32 * 0.5 * source_row_h
                             - new_left;
                         let right_y = right_text.min.y
-                            + (block.cmt_start + block.cmt_end) as f32 * 0.5 * row_h
+                            + (block.cmt_start + block.cmt_end) as f32 * 0.5 * comment_row_h
                             - new_right;
                         let distance = (point.y - (left_y + right_y) * 0.5).abs();
                         if distance < best_distance {
@@ -574,10 +928,6 @@ impl eframe::App for App {
 
             if comments_edit != comments_display {
                 self.comments = restore_markers(&self.comments, &comments_edit);
-                self.refresh();
-            }
-            if source_edit != self.source {
-                self.source = source_edit;
                 self.refresh();
             }
         });

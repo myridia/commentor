@@ -85,12 +85,13 @@ pub fn map_scroll(
     offset: f32,
     from_source: bool,
     blocks: &[Block],
-    row_h: f32,
+    from_row_h: f32,
+    to_row_h: f32,
     view_h: f32,
 ) -> f32 {
-    let center_line = offset / row_h + (view_h / row_h) * 0.5;
+    let center_line = offset / from_row_h + (view_h / from_row_h) * 0.5;
     let target = map_line(center_line, from_source, blocks);
-    (target * row_h - view_h * 0.5).max(0.0)
+    (target * to_row_h - view_h * 0.5).max(0.0)
 }
 
 pub fn is_marker_line(line: &str) -> bool {
@@ -146,5 +147,26 @@ pub fn restore_markers(canonical: &str, edited: &str) -> String {
 
     result.extend_from_slice(&edited_lines[prefix..edited_lines.len() - suffix]);
     result.extend_from_slice(&original[middle_end..]);
+    result.join("\n")
+}
+
+pub fn normalize_spacing(text: &str, space_lines: usize) -> String {
+    let lines: Vec<&str> = text.split('\n').collect();
+    let mut result: Vec<String> = Vec::new();
+    let mut seen_marker = false;
+    for line in lines {
+        if is_marker_line(line) {
+            if seen_marker {
+                while result.last().is_some_and(|last| last.trim().is_empty()) {
+                    result.pop();
+                }
+                for _ in 0..space_lines.saturating_sub(1) {
+                    result.push(String::new());
+                }
+            }
+            seen_marker = true;
+        }
+        result.push(line.to_string());
+    }
     result.join("\n")
 }

@@ -30,6 +30,22 @@ pub struct AppConfig {
     pub remember_last_file: bool,
     #[serde(default = "default_show_line_numbers")]
     pub show_line_numbers: bool,
+    #[serde(default = "default_space_lines")]
+    pub space_lines: usize,
+    #[serde(default = "default_source_font_size")]
+    pub source_font_size: f32,
+    #[serde(default = "default_comment_font_size")]
+    pub comment_font_size: f32,
+    #[serde(default = "default_theme")]
+    pub theme: String,
+    #[serde(default = "default_color_scheme")]
+    pub color_scheme: String,
+    #[serde(default = "default_highlight")]
+    pub highlight: bool,
+    #[serde(default = "default_language")]
+    pub language: String,
+    #[serde(default = "default_syntax_theme")]
+    pub syntax_theme: String,
 }
 
 fn default_remember_last_file() -> bool {
@@ -40,12 +56,52 @@ fn default_show_line_numbers() -> bool {
     true
 }
 
+fn default_space_lines() -> usize {
+    2
+}
+
+fn default_source_font_size() -> f32 {
+    13.0
+}
+
+fn default_comment_font_size() -> f32 {
+    13.0
+}
+
+fn default_theme() -> String {
+    "dark".to_string()
+}
+
+fn default_color_scheme() -> String {
+    "blue".to_string()
+}
+
+fn default_highlight() -> bool {
+    true
+}
+
+fn default_language() -> String {
+    "auto".to_string()
+}
+
+fn default_syntax_theme() -> String {
+    "default".to_string()
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
             last_file: None,
             remember_last_file: default_remember_last_file(),
             show_line_numbers: default_show_line_numbers(),
+            space_lines: default_space_lines(),
+            source_font_size: default_source_font_size(),
+            comment_font_size: default_comment_font_size(),
+            theme: default_theme(),
+            color_scheme: default_color_scheme(),
+            highlight: default_highlight(),
+            language: default_language(),
+            syntax_theme: default_syntax_theme(),
         }
     }
 }

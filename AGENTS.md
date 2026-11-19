@@ -10,9 +10,10 @@ Commentor shows comments that are stored outside source files. A source file `fo
 - No async runtime, no database
 
 ## Structure
-- `src/lib.rs` — file pairing, marker parsing, block mapping, scroll mapping and marker hiding/restoring
-- `src/main.rs` — eframe app, classic top menu, painting, panes, link strip, open/save
-- `src/config.rs` — `AppConfig` (`last_file`, `remember_last_file`, `show_line_numbers`) + TOML load/save
+- `src/lib.rs` — file pairing, marker parsing, block mapping, scroll mapping, marker hiding/restoring and comment spacing
+- `src/main.rs` — eframe app, classic top menu, themes, painting, panes, link strip, open/save
+- `src/highlight.rs` — lightweight syntax highlighter for the source pane (language detection + token palettes), used through `TextEdit::layouter`
+- `src/config.rs` — `AppConfig` (`last_file`, `remember_last_file`, `show_line_numbers`, `space_lines`, font sizes, theme/colour scheme, highlighting) + TOML load/save
 - `example/hello.rs` + `example/.comments.d/hello.rs.cmt` — simple standalone example used for testing
 - `src/.comments.d/*.cmt` — comments on commentor's own source; kept as samples, not used by the example task
 - `ask.sh` / `ask.d/` — task menu; each task is a script with `# id:`, `# group:` and `# desc:` headers
@@ -28,7 +29,9 @@ Commentor shows comments that are stored outside source files. A source file `fo
 - Blank lines between comment sections stay untinted in the right pane, so sections read clearly while the gutter still numbers every physical line.
 - The source pane is read-only in the viewer; the comment pane is editable and saved back to the `.cmt` file.
 - Each binding gets its own shade from `LINK_COLORS`; the same shade tints both pane highlights. The 44px link strip draws **two** cubic bezier curves per binding (first line and last line), each ending in a small filled triangle that points into the pane like a comic speech balloon tail. A faint band between the curves shows the range; selection brightens and thickens everything.
-- Settings: the last successfully opened source path is written to `~/.commentor/config.toml` and reopened on startup unless a path is passed as the first argument; a command-line path wins. `remember_last_file` and `show_line_numbers` are toggled in the Settings menu and saved immediately.
+- The source pane is syntax-highlighted through `TextEdit::layouter`. `highlight.rs` detects a language from the file extension (or the Settings override) and colours keywords, strings, comments, numbers, functions, types and macros. Highlighting can be disabled, and the palette has default/vivid/soft variants.
+- Settings: the last successfully opened source path is written to `~/.commentor/config.toml` and reopened on startup unless a path is passed as the first argument; a command-line path wins. All settings (last file, line numbers, space lines, source/comment font sizes, dark/light theme, accent scheme, highlighting, language and palette) are changed in the Settings menu and saved immediately.
+- `space_lines` is the number of visible blank lines between comment sections (default **2**, clamped 1–8). The hidden marker line already provides one, so `normalize_spacing` inserts `space_lines - 1` blank lines before later markers.
 
 ## Build and run
 ```bash
@@ -51,7 +54,7 @@ A classic top menu in a `TopBottomPanel`, built with `egui::menu::bar` + `ui.men
 
 - **File** — Open Source..., Save Comments, Exit
 - **View** — Next Link, Previous Link, Reset Scroll
-- **Settings** — Remember last file, Show line numbers, Open Settings File, Save Settings Now
+- **Settings** — Remember last file, Show line numbers, Theme (dark/light), Colors (blue/green/purple/warm/pink/neutral), Syntax highlighting, Language (auto plus 14 languages), Highlight palette (default/vivid/soft), Space lines, Source font, Comment font, Open Settings File, Save Settings Now
 - **Help** — Project Page, About
 
 `Ctrl+S` still saves the comment file. The status line lives in a bottom `TopBottomPanel`.

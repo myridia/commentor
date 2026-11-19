@@ -1,59 +1,62 @@
-@1-10
-The config module plus imports: eframe/egui widgets, the bezier shape for the link strip, the native file dialog, filesystem access and PathBuf.
+@1-14
+The config and highlight modules plus imports: eframe/egui widgets, the bezier shape for the link strip, the native file dialog, filesystem access and PathBuf.
 
-@12-45
-The binding palette. Each link index gets a slightly different cool shade; the same shade is used for the pane tint and the curve. Selection brightens the colour and thickens the stroke.
+@15-48
+The binding palette. Each link index gets a slightly different cool shade; the same shade is used for the pane tint, the band and the curves. Selection brightens the colour and thickens the stroke.
 
-@47-62
+@50-84
+The option tables used by the Settings menu: dark/light themes, six accent colour schemes, the language list (auto plus fourteen languages) and three syntax palettes.
+
+@86-131
+scheme_accent maps a colour-scheme name to an accent for the current theme, with a darker accent in light mode so it stays readable.
+
+@133-149
+apply_theme rebuilds egui visuals from dark or light defaults, then overrides the selection, hyperlink, hover/active fills and widget strokes with the chosen accent. It runs once per frame before the panels.
+
+@151-166
 All app state in one struct: source and comment text, both paths, status line, parsed blocks, selected link, scroll offsets, the one-frame scroll source flag, and the TOML settings.
 
-@64-133
-paint_pane draws one pane below its TextEdit: background, one coloured band per linked block, a gutter, and line numbers for the visible lines when the setting is on. On the comment side the band stops before trailing blank lines, so the empty lines between sections stay untinted and clearly separate the blocks while the gutter keeps counting them.
+@168-239
+paint_pane draws one pane below its TextEdit: background, one rounded and padded coloured band per linked block, a gutter, and line numbers for the visible lines when the setting is on. On the comment side the band stops before trailing blank lines, so the empty lines between sections stay untinted and clearly separate the blocks while the gutter keeps counting them. Each pane may use a different font and row height.
 
-@135-215
-paint_links draws two cubic bezier curves per block in the 44 pixel middle strip, one for the first line and one for the last line. Each curve ends in a small filled triangle that points into the pane like a comic speech balloon tail. A faint band between the curves shows the whole range, and selection brightens and thickens everything.
+@241-322
+paint_links draws two cubic bezier curves per block in the 44 pixel middle strip, one for the first line and one for the last line. Each curve ends in a small filled triangle that points into the pane like a comic speech balloon tail. A faint inset band between the curves shows the whole range, and selection brightens and thickens everything. The two panes can have different row heights.
 
-@217-261
-open reads a source file, derives the .cmt path beside it, reads or starts an empty comment file, and remembers the source path. save writes only the comment file. refresh reparses blocks and drops a selection that no longer exists.
+@324-370
+open reads a source file, derives the .cmt path beside it, reads or starts an empty comment file, normalizes the section spacing, and remembers the source path. save writes only the comment file. refresh reparses blocks and drops a selection that no longer exists.
 
-@263-280
-Settings persistence: remember_last_file writes the current source path into config.toml; save_settings writes the whole config and reports the result in the status line.
+@371-443
+Settings persistence and helpers: remember_last_file writes the current source path into config.toml; save_settings writes the whole config; set_space_lines re-normalizes the comment file; set_source_font and set_comment_font clamp the font sizes; active_language resolves the auto-detected or overridden language; select_relative wraps through the links.
 
-@282-293
-Link navigation wraps around the block list, starting from the first link when moving forward and the last one when moving backward.
-
-@296-305
+@444-453
 open_target is the platform shim used by the Help and Settings menus for URLs and for the config file path: cmd /C start on Windows, open on macOS, xdg-open elsewhere.
 
-@307-311
-The update loop still handles Ctrl+S by saving the comment pane.
+@455-461
+The update loop applies the theme, then still handles Ctrl+S by saving the comment pane.
 
-@313-390
-A classic top menu in a TopBottomPanel, built with egui::menu::bar and menu_button like ct. File opens/saves/exits; View moves between links and resets scroll; Settings toggles and saves preferences; Help opens the project page and shows About.
+@463-680
+A classic top menu in a TopBottomPanel, built with egui::menu::bar and menu_button like ct. File opens/saves/exits; View moves between links and resets scroll; Settings toggles preferences and exposes theme, accent colours, syntax highlighting, language, highlight palette, space lines and both font sizes; Help opens the project page and shows About.
 
-@392-394
+@681-684
 The status line lives in a bottom TopBottomPanel, so the central panel is reserved for the two panes.
 
-@396-422
-Layout maths: two equal panes, a 44 pixel link strip with room for the bezier tails, 6 pixel gaps, and a 46 pixel gutter inside each pane.
+@685-755
+Layout maths: two equal panes, a 44 pixel link strip with room for the bezier tails, 6 pixel gaps, and a 46 pixel gutter inside each pane. Scroll handoff maps the centre of one pane through the linked ranges into the other using each pane's own row height.
 
-@424-435
-Scroll handoff. A change from one pane sets the target offset of the other for this frame; the flag is cleared so the reply cannot start a loop.
+@756-794
+Both panes and the link strip are painted before the text widgets are added, so the bands stay behind the text. The source pane is read-only but selectable; the comment pane is editable.
 
-@437-482
-State is cloned for the frame. comments_display blanks out the @ marker lines while keeping their line count, so the right pane shows only the comment text; the canonical markers stay in self.comments for parsing and saving. Both panes and the link strip are painted before the text widgets are added, so the bands stay behind the text.
+@795-869
+Two ScrollAreas use their own font and row height. Each pane lives in a child UI with a distinct id source ("source_pane" / "comment_pane"), so egui does not report duplicate widget ids. The source editor always uses a layouter: it runs the highlighter when highlighting is enabled, otherwise it builds plain text. The comment editor uses a simple no-wrap layouter and shows the marker-free view of the .cmt file. Neither pane wraps, so every galley row stays on its physical line.
 
-@484-517
-Two ScrollAreas share the row height. The source editor is not interactive; the comment editor is editable and shows the marker-free view of the .cmt file.
+@871-916
+Click selection: a click on a source line, a comment line or a curve sets the selected block, using the row height of that pane. Clicking the strip picks the nearest curve by vertical distance.
 
-@519-561
-Click selection: a click on a source line, a comment line or a curve sets the selected block. Clicking the strip picks the nearest curve by vertical distance.
-
-@563-573
+@917-928
 Scroll detection compares the new offsets with the previous frame. applied_sync suppresses the echo from a scroll we caused ourselves.
 
-@575-582
-Any edit to the visible comment text is mapped back into the canonical file with restore_markers, then triggers a reparse, so new markers and changed ranges appear in the same frame.
+@929-936
+Any edit to the visible comment text is mapped back into the canonical file with restore_markers, then triggers a reparse so new markers and changed ranges appear in the same frame.
 
-@587-614
+@937-964
 Entry point. The window is 1100 by 760; settings are loaded first, then a command-line path is opened, otherwise the remembered last file if that setting is enabled.
