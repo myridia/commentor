@@ -24,6 +24,7 @@ Comment for lines 88 through 91.
 
 - Open a source file with **Open** or pass it as the first argument.
 - Click a highlighted line or a curve to select a link; both panes scroll together through the mapped blocks.
+- Each code↔comment binding has its own tint in both panes and a matching curve in the strip; the selected binding is brighter.
 - Edit the right pane and press **Save** or `Ctrl+S` to write the `.cmt` file back.
 
 ## Example

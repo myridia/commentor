@@ -22,6 +22,7 @@ Commentor shows comments that are stored outside source files. A source file `fo
 - Marker: `@N` or `@N-M` on its own line, 1-based and inclusive.
 - Text from a marker up to the next marker belongs to that block; other lines are free text.
 - The source pane is read-only in the viewer; the comment pane is editable and saved back to the `.cmt` file.
+- Each binding (the curve in the link strip between a source block and its comment block) gets its own shade from `LINK_COLORS`; the same shade tints both pane highlights, and selection brightens and thickens it.
 
 ## Build and run
 ```bash

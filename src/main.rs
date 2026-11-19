@@ -6,6 +6,41 @@ use rfd::FileDialog;
 use std::fs;
 use std::path::PathBuf;
 
+const LINK_COLORS: [(u8, u8, u8); 10] = [
+    (92, 150, 214),
+    (98, 166, 213),
+    (108, 182, 208),
+    (122, 196, 198),
+    (139, 190, 208),
+    (154, 176, 222),
+    (171, 162, 224),
+    (190, 158, 216),
+    (205, 163, 201),
+    (216, 174, 185),
+];
+
+fn link_rgb(index: usize) -> (u8, u8, u8) {
+    LINK_COLORS[index % LINK_COLORS.len()]
+}
+
+fn link_stroke_color(index: usize, selected: bool) -> Color32 {
+    let (r, g, b) = link_rgb(index);
+    if selected {
+        Color32::from_rgb(
+            r.saturating_add(40),
+            g.saturating_add(40),
+            b.saturating_add(40),
+        )
+    } else {
+        Color32::from_rgb(r, g, b)
+    }
+}
+
+fn link_tint_color(index: usize, selected: bool) -> Color32 {
+    let (r, g, b) = link_rgb(index);
+    Color32::from_rgba_unmultiplied(r, g, b, if selected { 90 } else { 48 })
+}
+
 #[derive(Default)]
 struct App {
     source: String,
@@ -23,7 +58,7 @@ struct App {
 }
 
 fn paint_pane(
-    ui: &egui::Ui,
+    ui: &mut egui::Ui,
     pane: Rect,
     text_area: Rect,
     lines: &[String],
@@ -34,8 +69,8 @@ fn paint_pane(
     font_id: &FontId,
     source_side: bool,
 ) {
+    ui.set_clip_rect(pane);
     let painter = ui.painter();
-    painter.set_clip_rect(pane);
     painter.rect_filled(pane, 2.0, ui.visuals().extreme_bg_color);
 
     for (index, block) in blocks.iter().enumerate() {
@@ -46,11 +81,7 @@ fn paint_pane(
         };
         let y0 = pane.min.y + start as f32 * row_h - offset;
         let y1 = pane.min.y + end as f32 * row_h - offset;
-        let color = if selected == Some(index) {
-            Color32::from_rgba_premultiplied(80, 145, 225, 72)
-        } else {
-            Color32::from_rgba_premultiplied(70, 110, 170, 40)
-        };
+        let color = link_tint_color(index, selected == Some(index));
         painter.rect_filled(
             Rect::from_min_max(
                 Pos2::new(text_area.min.x, y0),
@@ -82,11 +113,12 @@ fn paint_pane(
             Color32::GRAY,
         );
     }
-    painter.set_clip_rect(ui.ctx().screen_rect());
+    let screen_rect = ui.ctx().screen_rect();
+    ui.set_clip_rect(screen_rect);
 }
 
 fn paint_links(
-    ui: &egui::Ui,
+    ui: &mut egui::Ui,
     strip: Rect,
     left: Rect,
     right: Rect,
@@ -96,8 +128,8 @@ fn paint_links(
     right_offset: f32,
     row_h: f32,
 ) {
+    ui.set_clip_rect(strip);
     let painter = ui.painter();
-    painter.set_clip_rect(strip);
     painter.rect_filled(strip, 2.0, ui.visuals().faint_bg_color);
 
     let x0 = left.max.x;
@@ -109,11 +141,9 @@ fn paint_links(
         let left_y1 = left.min.y + block.src_end as f32 * row_h - left_offset;
         let right_y0 = right.min.y + block.cmt_start as f32 * row_h - right_offset;
         let right_y1 = right.min.y + block.cmt_end as f32 * row_h - right_offset;
-        let color = if selected == Some(index) {
-            Color32::from_rgb(130, 210, 255)
-        } else {
-            Color32::from_rgb(90, 145, 195)
-        };
+        let is_selected = selected == Some(index);
+        let color = link_stroke_color(index, is_selected);
+        let width = if is_selected { 2.4 } else { 1.5 };
         for &(from_y, to_y) in &[(left_y0, right_y0), (left_y1, right_y1)] {
             painter.add(CubicBezierShape {
                 points: [
@@ -124,11 +154,12 @@ fn paint_links(
                 ],
                 closed: false,
                 fill: Color32::TRANSPARENT,
-                stroke: Stroke::new(1.5, color),
+                stroke: Stroke::new(width, color).into(),
             });
         }
     }
-    painter.set_clip_rect(ui.ctx().screen_rect());
+    let screen_rect = ui.ctx().screen_rect();
+    ui.set_clip_rect(screen_rect);
 }
 
 impl App {
