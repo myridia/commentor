@@ -20,7 +20,7 @@ Comment for lines 88 through 91.
 
 `@N` points at one line, `@N-M` at an inclusive range. Line numbers are 1-based. Every line up to the next marker belongs to that block. Lines that do not start with `@` are free text.
 
-Markers stay in the `.cmt` file, but the right pane hides the `@` lines while keeping their line positions. Block colours and the gutter line numbers show what belongs where; edits are mapped back into the file with the markers preserved.
+Markers stay in the `.cmt` file, but the right pane hides the `@` lines while keeping their line positions. The example adds blank lines between sections; those separator lines stay untinted, so each comment is visually separated while the gutter still counts every physical line. Edits are mapped back into the file with the markers preserved.
 
 ## Use
 

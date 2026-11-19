@@ -82,7 +82,15 @@ fn paint_pane(
         let (start, end) = if source_side {
             (block.src_start, block.src_end)
         } else {
-            (block.cmt_start, block.cmt_end)
+            let mut end = block.cmt_end;
+            while end > block.cmt_start
+                && lines
+                    .get(end - 1)
+                    .is_some_and(|line| line.trim().is_empty())
+            {
+                end -= 1;
+            }
+            (block.cmt_start, end)
         };
         let y0 = pane.min.y + start as f32 * row_h - offset;
         let y1 = pane.min.y + end as f32 * row_h - offset;

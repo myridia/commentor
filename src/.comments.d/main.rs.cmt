@@ -7,53 +7,53 @@ The binding palette. Each link index gets a slightly different cool shade; the s
 @47-62
 All app state in one struct: source and comment text, both paths, status line, parsed blocks, selected link, scroll offsets, the one-frame scroll source flag, and the TOML settings.
 
-@64-125
-paint_pane draws one pane below its TextEdit: background, one coloured band per linked block, a gutter, and line numbers for the visible lines when the setting is on. The same function serves both sides; source_side picks which range of a block to use.
+@64-133
+paint_pane draws one pane below its TextEdit: background, one coloured band per linked block, a gutter, and line numbers for the visible lines when the setting is on. On the comment side the band stops before trailing blank lines, so the empty lines between sections stay untinted and clearly separate the blocks while the gutter keeps counting them.
 
-@127-207
+@135-215
 paint_links draws two cubic bezier curves per block in the 44 pixel middle strip, one for the first line and one for the last line. Each curve ends in a small filled triangle that points into the pane like a comic speech balloon tail. A faint band between the curves shows the whole range, and selection brightens and thickens everything.
 
-@209-253
+@217-261
 open reads a source file, derives the .cmt path beside it, reads or starts an empty comment file, and remembers the source path. save writes only the comment file. refresh reparses blocks and drops a selection that no longer exists.
 
-@255-272
+@263-280
 Settings persistence: remember_last_file writes the current source path into config.toml; save_settings writes the whole config and reports the result in the status line.
 
-@274-285
+@282-293
 Link navigation wraps around the block list, starting from the first link when moving forward and the last one when moving backward.
 
-@288-297
+@296-305
 open_target is the platform shim used by the Help and Settings menus for URLs and for the config file path: cmd /C start on Windows, open on macOS, xdg-open elsewhere.
 
-@299-303
+@307-311
 The update loop still handles Ctrl+S by saving the comment pane.
 
-@305-382
+@313-390
 A classic top menu in a TopBottomPanel, built with egui::menu::bar and menu_button like ct. File opens/saves/exits; View moves between links and resets scroll; Settings toggles and saves preferences; Help opens the project page and shows About.
 
-@384-386
+@392-394
 The status line lives in a bottom TopBottomPanel, so the central panel is reserved for the two panes.
 
-@388-414
+@396-422
 Layout maths: two equal panes, a 44 pixel link strip with room for the bezier tails, 6 pixel gaps, and a 46 pixel gutter inside each pane.
 
-@416-427
+@424-435
 Scroll handoff. A change from one pane sets the target offset of the other for this frame; the flag is cleared so the reply cannot start a loop.
 
-@429-474
+@437-482
 State is cloned for the frame. comments_display blanks out the @ marker lines while keeping their line count, so the right pane shows only the comment text; the canonical markers stay in self.comments for parsing and saving. Both panes and the link strip are painted before the text widgets are added, so the bands stay behind the text.
 
-@476-509
+@484-517
 Two ScrollAreas share the row height. The source editor is not interactive; the comment editor is editable and shows the marker-free view of the .cmt file.
 
-@511-553
+@519-561
 Click selection: a click on a source line, a comment line or a curve sets the selected block. Clicking the strip picks the nearest curve by vertical distance.
 
-@555-565
+@563-573
 Scroll detection compares the new offsets with the previous frame. applied_sync suppresses the echo from a scroll we caused ourselves.
 
-@567-574
+@575-582
 Any edit to the visible comment text is mapped back into the canonical file with restore_markers, then triggers a reparse, so new markers and changed ranges appear in the same frame.
 
-@579-606
+@587-614
 Entry point. The window is 1100 by 760; settings are loaded first, then a command-line path is opened, otherwise the remembered last file if that setting is enabled.
