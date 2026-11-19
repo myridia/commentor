@@ -1,6 +1,6 @@
 mod config;
 
-use commentor::{map_scroll, pair_path, parse_blocks, Block};
+use commentor::{hide_markers, map_scroll, pair_path, parse_blocks, restore_markers, Block};
 use config::AppConfig;
 use eframe::egui;
 use egui::epaint::CubicBezierShape;
@@ -393,8 +393,9 @@ impl eframe::App for App {
             let selected = self.selected;
             let source_lines: Vec<String> = self.source.lines().map(str::to_string).collect();
             let comment_lines: Vec<String> = self.comments.lines().map(str::to_string).collect();
+            let comments_display = hide_markers(&self.comments);
             let mut source_edit = self.source.clone();
-            let mut comments_edit = self.comments.clone();
+            let mut comments_edit = comments_display.clone();
             let strip_response = ui.allocate_rect(strip_rect, egui::Sense::click());
 
             paint_pane(
@@ -526,8 +527,8 @@ impl eframe::App for App {
             self.left_offset = new_left;
             self.right_offset = new_right;
 
-            if comments_edit != self.comments {
-                self.comments = comments_edit;
+            if comments_edit != comments_display {
+                self.comments = restore_markers(&self.comments, &comments_edit);
                 self.refresh();
             }
             if source_edit != self.source {

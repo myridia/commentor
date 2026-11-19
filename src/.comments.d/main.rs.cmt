@@ -40,20 +40,20 @@ Layout maths: two equal panes, a 26 pixel link strip, 6 pixel gaps, and a 46 pix
 @379-390
 Scroll handoff. A change from one pane sets the target offset of the other for this frame; the flag is cleared so the reply cannot start a loop.
 
-@392-436
-State is cloned for the frame, then both panes and the link strip are painted before the text widgets are added, so the bands stay behind the text.
+@392-437
+State is cloned for the frame. comments_display blanks out the @ marker lines while keeping their line count, so the right pane shows only the comment text; the canonical markers stay in self.comments for parsing and saving. Both panes and the link strip are painted before the text widgets are added, so the bands stay behind the text.
 
-@438-471
-Two ScrollAreas share the row height. The source editor is not interactive; the comment editor is editable and is where new @ markers can be typed.
+@439-472
+Two ScrollAreas share the row height. The source editor is not interactive; the comment editor is editable and shows the marker-free view of the .cmt file.
 
-@473-515
+@474-516
 Click selection: a click on a source line, a comment line or a curve sets the selected block. Clicking the strip picks the nearest curve by vertical distance.
 
-@517-527
+@518-528
 Scroll detection compares the new offsets with the previous frame. applied_sync suppresses the echo from a scroll we caused ourselves.
 
-@529-536
-Any edit to the comment text triggers a reparse, so new markers and changed ranges appear in the same frame.
+@530-537
+Any edit to the visible comment text is mapped back into the canonical file with restore_markers, then triggers a reparse, so new markers and changed ranges appear in the same frame.
 
-@541-568
+@542-569
 Entry point. The window is 1100 by 760; settings are loaded first, then a command-line path is opened, otherwise the remembered last file if that setting is enabled.

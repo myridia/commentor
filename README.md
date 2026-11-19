@@ -20,6 +20,8 @@ Comment for lines 88 through 91.
 
 `@N` points at one line, `@N-M` at an inclusive range. Line numbers are 1-based. Every line up to the next marker belongs to that block. Lines that do not start with `@` are free text.
 
+Markers stay in the `.cmt` file, but the right pane hides the `@` lines while keeping their line positions. Block colours and the gutter line numbers show what belongs where; edits are mapped back into the file with the markers preserved.
+
 ## Use
 
 - Open a source file with **File → Open Source...** or pass it as the first argument. The last opened file is saved in `~/.commentor/config.toml` and reopened on the next launch; a command-line path wins.
@@ -31,10 +33,19 @@ Comment for lines 88 through 91.
 
 ## Example
 
-Commentor's own source is the example. Open `src/main.rs`, `src/lib.rs` or `src/config.rs`; their comment files live in `src/.comments.d/` and describe what each block of code does.
+A small standalone example lives in `example/`:
+
+```text
+example/
+├── hello.rs
+└── .comments.d/
+    └── hello.rs.cmt
+```
+
+Open `example/hello.rs`; the paired `.cmt` file explains each block of the source. This is the file used by the **Run example** task.
 
 ```bash
-cargo run -- src/main.rs
+cargo run -- example/hello.rs
 ```
 
 ## Build and run

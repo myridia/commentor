@@ -5,4 +5,4 @@
 . "$(dirname "$0")/lib.sh"
 
 enter
-find src/.comments.d -name '*.cmt' -print
+find example/.comments.d -name '*.cmt' -print

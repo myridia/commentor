@@ -92,3 +92,59 @@ pub fn map_scroll(
     let target = map_line(center_line, from_source, blocks);
     (target * row_h - view_h * 0.5).max(0.0)
 }
+
+pub fn is_marker_line(line: &str) -> bool {
+    parse_marker(line.trim()).is_some()
+}
+
+pub fn hide_markers(text: &str) -> String {
+    text.split('\n')
+        .map(|line| if is_marker_line(line) { "" } else { line })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+pub fn restore_markers(canonical: &str, edited: &str) -> String {
+    let original: Vec<String> = canonical.split('\n').map(str::to_string).collect();
+    let display: Vec<String> = original
+        .iter()
+        .map(|line| {
+            if is_marker_line(line) {
+                String::new()
+            } else {
+                line.clone()
+            }
+        })
+        .collect();
+    let edited_lines: Vec<String> = edited.split('\n').map(str::to_string).collect();
+
+    let mut prefix = 0;
+    while prefix < display.len()
+        && prefix < edited_lines.len()
+        && display[prefix] == edited_lines[prefix]
+    {
+        prefix += 1;
+    }
+
+    let mut suffix = 0;
+    while suffix < display.len() - prefix
+        && suffix < edited_lines.len() - prefix
+        && display[display.len() - 1 - suffix] == edited_lines[edited_lines.len() - 1 - suffix]
+    {
+        suffix += 1;
+    }
+
+    let mut result: Vec<String> = Vec::new();
+    result.extend_from_slice(&original[..prefix]);
+
+    let middle_end = display.len() - suffix;
+    for line in &original[prefix..middle_end] {
+        if is_marker_line(line) {
+            result.push(line.clone());
+        }
+    }
+
+    result.extend_from_slice(&edited_lines[prefix..edited_lines.len() - suffix]);
+    result.extend_from_slice(&original[middle_end..]);
+    result.join("\n")
+}
