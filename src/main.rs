@@ -173,15 +173,6 @@ struct LineLayout {
 }
 
 impl LineLayout {
-    fn uniform(lines: usize, row_h: f32) -> Self {
-        let tops = (0..lines).map(|index| index as f32 * row_h).collect();
-        Self {
-            tops,
-            height: lines as f32 * row_h,
-            row_h,
-        }
-    }
-
     fn from_galley(galley: &egui::Galley, lines: usize, row_h: f32) -> Self {
         let mut tops = Vec::with_capacity(lines);
         let mut line = 0;
@@ -813,28 +804,50 @@ impl eframe::App for App {
             let syntax_palette = highlight::Palette::new(dark, &self.config.syntax_theme);
             let language = self.active_language();
             let plain_color = ui.visuals().widgets.inactive.text_color();
-            let source_layout = LineLayout::uniform(source_lines.len(), source_row_h);
+            let source_layout = {
+                let mut job = if self.config.highlight {
+                    highlight::layout_job(
+                        &source_edit,
+                        &source_font,
+                        language,
+                        &syntax_palette,
+                        plain_color,
+                    )
+                } else {
+                    egui::text::LayoutJob::simple(
+                        source_edit.clone(),
+                        source_font.clone(),
+                        plain_color,
+                        f32::INFINITY,
+                    )
+                };
+                job.wrap.max_width = f32::INFINITY;
+                let galley = ui.fonts(|fonts| fonts.layout_job(job));
+                LineLayout::from_galley(&galley, source_lines.len(), source_row_h)
+            };
             let wrap_comments = self.config.comment_wrap;
             let comment_wrap_w =
                 (right_text.width() - ui.spacing().scroll.allocated_width()).max(40.0);
-            let comment_layout = if wrap_comments {
-                let job = egui::text::LayoutJob::simple(
-                    comments_display.clone(),
-                    comment_font.clone(),
-                    plain_color,
-                    comment_wrap_w,
-                );
-                let galley = ui.fonts(|fonts| fonts.layout_job(job));
-                LineLayout::from_galley(&galley, comment_lines.len(), comment_row_h)
+            let comment_wrap_width = if wrap_comments {
+                comment_wrap_w
             } else {
-                LineLayout::uniform(comment_lines.len(), comment_row_h)
+                f32::INFINITY
             };
+            let comment_job = egui::text::LayoutJob::simple(
+                comments_display.clone(),
+                comment_font.clone(),
+                plain_color,
+                comment_wrap_width,
+            );
+            let comment_galley = ui.fonts(|fonts| fonts.layout_job(comment_job));
+            let comment_layout =
+                LineLayout::from_galley(&comment_galley, comment_lines.len(), comment_row_h);
 
             let mut target_left = self.left_offset;
             let mut target_right = self.right_offset;
             let mut applied_sync = false;
             if self.scroll_from == 1 {
-                let center = self.left_offset / source_row_h + (pane_h / source_row_h) * 0.5;
+                let center = source_layout.line_position(self.left_offset + pane_h * 0.5);
                 let target_line = map_line(center, true, &self.blocks);
                 target_right = (comment_layout.top(target_line) - pane_h * 0.5).max(0.0);
                 self.scroll_from = 0;
@@ -842,7 +855,7 @@ impl eframe::App for App {
             } else if self.scroll_from == 2 {
                 let center = comment_layout.line_position(self.right_offset + pane_h * 0.5);
                 let target_line = map_line(center, false, &self.blocks);
-                target_left = (target_line * source_row_h - pane_h * 0.5).max(0.0);
+                target_left = (source_layout.top(target_line) - pane_h * 0.5).max(0.0);
                 self.scroll_from = 0;
                 applied_sync = true;
             }
@@ -936,11 +949,7 @@ impl eframe::App for App {
                         string.to_owned(),
                         comment_font.clone(),
                         plain_color,
-                        if wrap_comments {
-                            comment_wrap_w
-                        } else {
-                            f32::INFINITY
-                        },
+                        comment_wrap_width,
                     );
                     layouter_ui.fonts(|fonts| fonts.layout_job(job))
                 };
@@ -963,11 +972,7 @@ impl eframe::App for App {
                 .vertical_scroll_offset(target_right)
                 .show(&mut right_child, |ui| {
                     let editor = egui::TextEdit::multiline(&mut comments_edit)
-                        .desired_width(if wrap_comments {
-                            comment_wrap_w
-                        } else {
-                            f32::INFINITY
-                        })
+                        .desired_width(comment_wrap_width)
                         .frame(false)
                         .margin(Vec2::ZERO)
                         .font(comment_font.clone())
