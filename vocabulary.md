@@ -6,7 +6,7 @@ Shared names for the parts of the commentor GUI and the code behind them. Use th
 
 ```
 ┌──────────────────────────── menu bar ────────────────────────────┐
-│ File   View   Settings   Help                                    │
+│ File   Edit   View   Settings   Help                             │
 ├──────────────────┬───────────┬───────────────────────────────────┤
 │  source pane     │ link strip│  comment pane                     │
 │ ┌──────┬─────────┤           │ ┌──────┬──────────────────────────┐ │
@@ -23,15 +23,17 @@ Shared names for the parts of the commentor GUI and the code behind them. Use th
 | Name | What it is | Where it lives |
 | --- | --- | --- |
 | **Window** | The native viewport opened by eframe, titled `commentor`, default 1100 × 760. | `main`, `main.rs` |
-| **Menu bar** | The classic top panel with the `File`, `View`, `Settings` and `Help` menus. | `update`, `TopBottomPanel::top("menu_bar")` |
+| **Menu bar** | The classic top panel with the `File`, `Edit`, `View`, `Settings` and `Help` menus. | `update`, `TopBottomPanel::top("menu_bar")` |
+| **Edit menu** | Undo, Redo, Cut, Copy, Paste, Select All and Delete for the focused pane. The same commands are on each pane's right-click menu, and the usual keyboard shortcuts work directly in the `TextEdit`. Copy and Select All also work in the read-only source pane. | `editor_menu_item`, `editor_context_menu`, `run_editor_action` |
+| **Clipboard** | The last text copied or cut from either pane. Keyboard paste still uses the system clipboard; menu paste reuses this remembered text. | `App::clipboard`, `egui::Event::Paste` |
 | **Status bar** | The bottom panel that shows the last action or error, e.g. `opened …`, `saved …`, `settings saved`. | `update`, `TopBottomPanel::bottom("status_bar")` |
 | **Workspace** | The central area between the two bars that holds the panes and the link strip. | `update`, `CentralPanel` |
 | **Source pane** | The left, read-only pane. It shows the source file, is syntax-highlighted, and receives 58% of the workspace width. | `left_rect`, `left_text`, `"source_pane"` |
 | **Comment pane** | The right, editable pane. It shows the marker-free view of the `.cmt` file and can wrap long lines when the wrap setting is on. | `right_rect`, `right_text`, `"comment_pane"` |
-| **Pane gutter** | The narrow vertical strip at the left edge of each pane, behind the line numbers. Its background is `faint_bg_color`. | `paint_pane`, `gutter_width` |
-| **Line-number column** | The digits painted inside the gutter, one per physical line. Can be hidden in Settings. | `paint_pane`, `show_line_numbers` |
+| **Pane gutter** | The narrow vertical strip at the left edge of each pane, behind the line numbers. Its background is `faint_bg_color`. | `paint_pane_background`, `gutter_width` |
+| **Line-number column** | The digits painted inside the gutter, one per physical line. Can be hidden in Settings. | `paint_line_numbers`, `show_line_numbers` |
 | **Text area** | The part of a pane to the right of the gutter where the `TextEdit` lives. | `left_text`, `right_text` |
-| **Tint band** | The translucent coloured rectangle behind one block. Internally called the block band. It starts at the text edge, extends 2 px above the first row and 2 px below the last row, ends 4 px before the pane's right edge, and has a 3 px corner radius. | `paint_pane`, `link_tint_color` |
+| **Tint band** | The translucent coloured rectangle behind one block. Internally called the block band. It starts at the text edge, extends 2 px above the first row and 2 px below the last row, ends 4 px before the pane's right edge, and has a 3 px corner radius. | `paint_scrolled_layers`, `link_tint_color` |
 | **Selection** | The block chosen by a click or by `View → Next/Previous Link`. Its tint is stronger and its curves are thicker and brighter. | `selected`, `link_stroke_color`, `link_tint_color` |
 | **Link strip** | The 24 px column between the two panes that carries the curves, separated from each pane by a 4 px gap. | `strip_rect`, `paint_links` |
 | **Link curve** | A cubic bezier joining the first (or last) row of a source range to the first (or last) row of its comment range. Two curves per block. | `paint_links`, `CubicBezierShape` |

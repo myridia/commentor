@@ -4,65 +4,71 @@ The config and highlight modules plus imports: eframe/egui widgets, the bezier s
 @15-48
 The binding palette. Each link index gets a slightly different cool shade; the same shade is used for the pane tint, the band and the curves. Selection brightens the colour and thickens the stroke.
 
-@50-84
+@50-167
+Editor commands. The two panes get stable ids so a menu action can refocus the pane that was last being edited. Actions are sent as egui events, so the focused TextEdit does the real work with its own cursor and undo state. Copy and Cut also leave the text in the app's clipboard fallback, which menu and context-menu Paste reuse; keyboard paste still uses the system clipboard. The Edit menu and both right-click menus are built from the same helper.
+
+@169-203
 The option tables used by the Settings menu: dark/light themes, six accent colour schemes, the language list (auto plus fourteen languages) and three syntax palettes.
 
-@86-131
+@205-250
 scheme_accent maps a colour-scheme name to an accent for the current theme, with a darker accent in light mode so it stays readable.
 
-@133-149
+@252-268
 apply_theme rebuilds egui visuals from dark or light defaults, then overrides the selection, hyperlink, hover/active fills and widget strokes with the chosen accent. It runs once per frame before the panels.
 
-@151-166
-All app state in one struct: source and comment text, both paths, status line, parsed blocks, selected link, scroll offsets, the one-frame scroll source flag, and the TOML settings.
+@271-294
+All app state in one struct: source and comment text, both paths, status line, parsed blocks, selected link, scroll offsets, the one-frame scroll source flag, the last focused editor, the clipboard fallback, and the TOML settings.
 
-@169-234
+@296-355
 LineLayout maps logical line numbers to y offsets. from_galley walks the galley rows, including wrapped ones, and records the top of each logical line; both panes now use it, so pixel-rounded row heights cannot drift away from the painted bands. top interpolates inside a line, line_at converts a click position back to a logical line, and line_position keeps a fractional row for scroll sync.
 
-@236-319
+@357-440
 Pane painting is split so the tinted bands stay glued to the text. paint_pane_background fills the pane and gutter, and paint_line_numbers puts the visible numbers in the gutter using the same offset the TextEdit will use. paint_scrolled_layers is called from inside each ScrollArea and uses that same content top, so bands and numbers move with the text instead of lagging behind. Each band is rounded and padded, and on the comment side it stops before trailing blank lines so sections stay visually separate.
 
-@321-402
+@442-523
 paint_links draws two cubic bezier curves per block in the 24 pixel middle strip, one for the first line and one for the last line. Each curve ends in a small filled triangle that points into the pane like a comic speech balloon tail. A faint inset band between the curves shows the whole range, and selection brightens and thickens everything. It runs after both ScrollAreas so it uses their real offsets and each pane's LineLayout.
 
-@405-450
+@526-571
 open reads a source file, derives the .cmt path beside it, reads or starts an empty comment file, normalizes the section spacing, and remembers the source path. save writes only the comment file. refresh reparses blocks and drops a selection that no longer exists.
 
-@451-522
+@572-643
 Settings persistence and helpers: remember_last_file writes the current source path into config.toml; save_settings writes the whole config; set_space_lines re-normalizes the comment file; set_source_font and set_comment_font clamp the font sizes; active_language resolves the auto-detected or overridden language; select_relative wraps through the links.
 
-@524-533
+@645-654
 open_target is the platform shim used by the Help and Settings menus for URLs and for the config file path: cmd /C start on Windows, open on macOS, xdg-open elsewhere.
 
-@535-541
+@656-662
 The update loop applies the theme, then still handles Ctrl+S by saving the comment pane.
 
-@543-765
-A classic top menu in a TopBottomPanel, built with egui::menu::bar and menu_button like ct. File opens/saves/exits; View moves between links and resets scroll; Settings toggles preferences and exposes theme, accent colours, syntax highlighting, language, highlight palette, space lines, line numbers, comment wrapping and both font sizes; Help opens the project page and shows About.
+@664-948
+A classic top menu in a TopBottomPanel, built with egui::menu::bar and menu_button like ct. File opens/saves/exits; Edit provides Undo, Redo, Cut, Copy, Paste, Select All and Delete; View moves between links and resets scroll; Settings toggles preferences and exposes theme, accent colours, syntax highlighting, language, highlight palette, space lines, line numbers, comment wrapping and both font sizes; Help opens the project page and shows About.
 
-@767-769
+@950-952
 The status line lives in a bottom TopBottomPanel, so the central panel is reserved for the two panes.
 
-@771-870
+@954-1053
 Central layout: the source pane takes 58 percent of the available width and the comment pane the rest, a 24 pixel link strip with 4 pixel gaps sits between them, and each pane has a gutter sized from its widest line number plus a small pad. Both panes get a LineLayout built from the same galley their TextEdit renders: the source uses its highlighter job with infinite wrap, and the comment uses the measured wrap width when Wrap comment text is on or infinite wrap otherwise. Scroll handoff maps the centre of one pane through the linked ranges into the other, using those layouts for both ends.
 
-@872-923
+@1055-1106
 The strip gets a click area, both panes get their static backgrounds, and the gutter numbers are painted against the offset the TextEdit will use. Each pane then gets a child UI with a distinct id source ("source_pane" / "comment_pane"), clipped to its own text rect so long lines cannot bleed into the other pane. The source editor always uses a layouter: it runs the highlighter when highlighting is enabled, otherwise it builds plain text.
 
-@925-994
+@1108-1179
 Two ScrollAreas use their own font and line layout. The source pane always scrolls in both directions and never wraps. The comment pane uses a vertical-only ScrollArea with an always-visible bar when Wrap comment text is on, and a two-axis no-wrap area otherwise. The source editor is added left-aligned rather than with add_sized, which would centre oversized text and push it left over the source pane. The comment editor uses a simple layouter with the same wrap width as the measured galley, so painted rows match the text exactly. Each closure paints its tinted bands before adding the editor, so the colour stays behind the text and moves with it.
 
-@996-1053
-The real scroll offsets come back from the ScrollAreas, then the link strip is painted with those offsets. Click selection follows: a click on a source line, a comment line or a curve sets the selected block, using each pane's LineLayout so wrapped rows still select correctly. Clicking the strip picks the nearest curve by vertical distance.
+@1181-1250
+The real scroll offsets come back from the ScrollAreas, then the link strip is painted with those offsets. Click selection follows: a click on a source line, a comment line or a curve sets the selected block, using each pane's LineLayout so wrapped rows still select correctly. Clicking the strip picks the nearest curve by vertical distance. The last focused editor is remembered, then each pane gets its right-click Edit menu, with Copy and Select All available on the read-only source too.
 
-@1055-1065
+@1252-1262
 Scroll detection compares the new offsets with the previous frame. applied_sync suppresses the echo from a scroll we caused ourselves.
 
-@1067-1073
+@1264-1268
 Any edit to the visible comment text is mapped back into the canonical file with restore_markers, then triggers a reparse so new markers and changed ranges appear in the same frame.
 
-@1075-1102
+@1270-1274
+Whatever the editors copied this frame is kept as the clipboard fallback for menu Paste, while still being handed to the system clipboard by egui.
+
+@1277-1304
 Entry point. The window is 1100 by 760; settings are loaded first, then a command-line path is opened, otherwise the remembered last file if that setting is enabled.
 
-@1104-1108
+@1306-1310
 Gutter width helper: the digit count comes from the line total, the digit width from the active monospace font, and the result adds 4 pixels of left pad and 6 pixels of breathing room before the text, never below 18.

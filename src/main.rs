@@ -47,6 +47,125 @@ fn link_tint_color(index: usize, selected: bool) -> Color32 {
     Color32::from_rgba_unmultiplied(r, g, b, if selected { 90 } else { 48 })
 }
 
+fn source_editor_id() -> egui::Id {
+    egui::Id::new("commentor_source_editor")
+}
+
+fn comment_editor_id() -> egui::Id {
+    egui::Id::new("commentor_comment_editor")
+}
+
+fn editor_target(focused: Option<egui::Id>) -> egui::Id {
+    focused.unwrap_or_else(comment_editor_id)
+}
+
+fn key_event(key: egui::Key, modifiers: egui::Modifiers) -> egui::Event {
+    egui::Event::Key {
+        key,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers,
+    }
+}
+
+fn run_editor_action(ctx: &egui::Context, focused: Option<egui::Id>, event: egui::Event) {
+    ctx.memory_mut(|memory| memory.request_focus(editor_target(focused)));
+    ctx.input_mut(|input| input.events.push(event));
+    ctx.request_repaint();
+}
+
+fn editor_menu_item(
+    ui: &mut egui::Ui,
+    ctx: &egui::Context,
+    focused: Option<egui::Id>,
+    label: &str,
+    shortcut: egui::KeyboardShortcut,
+    event: egui::Event,
+) {
+    let button = egui::Button::new(label).shortcut_text(ctx.format_shortcut(&shortcut));
+    if ui.add(button).clicked() {
+        run_editor_action(ctx, focused, event);
+        ui.close_menu();
+    }
+}
+
+fn editor_context_menu(
+    response: &egui::Response,
+    ctx: &egui::Context,
+    focused: Option<egui::Id>,
+    clipboard: &str,
+    editable: bool,
+) {
+    response.context_menu(|ui| {
+        let command = egui::Modifiers::COMMAND;
+        if editable {
+            editor_menu_item(
+                ui,
+                ctx,
+                focused,
+                "Undo",
+                egui::KeyboardShortcut::new(command, egui::Key::Z),
+                key_event(egui::Key::Z, command),
+            );
+            editor_menu_item(
+                ui,
+                ctx,
+                focused,
+                "Redo",
+                egui::KeyboardShortcut::new(command | egui::Modifiers::SHIFT, egui::Key::Z),
+                key_event(egui::Key::Z, command | egui::Modifiers::SHIFT),
+            );
+            ui.separator();
+            editor_menu_item(
+                ui,
+                ctx,
+                focused,
+                "Cut",
+                egui::KeyboardShortcut::new(command, egui::Key::X),
+                egui::Event::Cut,
+            );
+        }
+        editor_menu_item(
+            ui,
+            ctx,
+            focused,
+            "Copy",
+            egui::KeyboardShortcut::new(command, egui::Key::C),
+            egui::Event::Copy,
+        );
+        if editable {
+            editor_menu_item(
+                ui,
+                ctx,
+                focused,
+                "Paste",
+                egui::KeyboardShortcut::new(command, egui::Key::V),
+                egui::Event::Paste(clipboard.to_owned()),
+            );
+        }
+        ui.separator();
+        editor_menu_item(
+            ui,
+            ctx,
+            focused,
+            "Select All",
+            egui::KeyboardShortcut::new(command, egui::Key::A),
+            key_event(egui::Key::A, command),
+        );
+        if editable {
+            editor_menu_item(
+                ui,
+                ctx,
+                focused,
+                "Delete",
+                egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Delete),
+                key_event(egui::Key::Delete, egui::Modifiers::NONE),
+            );
+        }
+    });
+}
+
 const THEMES: [(&str, &str); 2] = [("dark", "Dark"), ("light", "Light")];
 
 const COLOR_SCHEMES: [(&str, &str); 6] = [
@@ -162,6 +281,8 @@ struct App {
     prev_left: f32,
     prev_right: f32,
     scroll_from: u8,
+    focused_editor: Option<egui::Id>,
+    clipboard: String,
     config: AppConfig,
 }
 
@@ -559,6 +680,68 @@ impl eframe::App for App {
                         ui.close_menu();
                     }
                 });
+                ui.menu_button("Edit", |ui| {
+                    let command = egui::Modifiers::COMMAND;
+                    let focused = self.focused_editor;
+                    editor_menu_item(
+                        ui,
+                        ctx,
+                        focused,
+                        "Undo",
+                        egui::KeyboardShortcut::new(command, egui::Key::Z),
+                        key_event(egui::Key::Z, command),
+                    );
+                    editor_menu_item(
+                        ui,
+                        ctx,
+                        focused,
+                        "Redo",
+                        egui::KeyboardShortcut::new(command | egui::Modifiers::SHIFT, egui::Key::Z),
+                        key_event(egui::Key::Z, command | egui::Modifiers::SHIFT),
+                    );
+                    ui.separator();
+                    editor_menu_item(
+                        ui,
+                        ctx,
+                        focused,
+                        "Cut",
+                        egui::KeyboardShortcut::new(command, egui::Key::X),
+                        egui::Event::Cut,
+                    );
+                    editor_menu_item(
+                        ui,
+                        ctx,
+                        focused,
+                        "Copy",
+                        egui::KeyboardShortcut::new(command, egui::Key::C),
+                        egui::Event::Copy,
+                    );
+                    editor_menu_item(
+                        ui,
+                        ctx,
+                        focused,
+                        "Paste",
+                        egui::KeyboardShortcut::new(command, egui::Key::V),
+                        egui::Event::Paste(self.clipboard.clone()),
+                    );
+                    ui.separator();
+                    editor_menu_item(
+                        ui,
+                        ctx,
+                        focused,
+                        "Select All",
+                        egui::KeyboardShortcut::new(command, egui::Key::A),
+                        key_event(egui::Key::A, command),
+                    );
+                    editor_menu_item(
+                        ui,
+                        ctx,
+                        focused,
+                        "Delete",
+                        egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Delete),
+                        key_event(egui::Key::Delete, egui::Modifiers::NONE),
+                    );
+                });
                 ui.menu_button("View", |ui| {
                     if ui.button("Next Link").clicked() {
                         self.select_relative(1);
@@ -937,6 +1120,7 @@ impl eframe::App for App {
                         true,
                     );
                     let editor = egui::TextEdit::multiline(&mut source_view)
+                        .id(source_editor_id())
                         .desired_width(f32::INFINITY)
                         .frame(false)
                         .margin(Vec2::ZERO)
@@ -985,6 +1169,7 @@ impl eframe::App for App {
                         false,
                     );
                     let editor = egui::TextEdit::multiline(&mut comments_edit)
+                        .id(comment_editor_id())
                         .desired_width(comment_wrap_width)
                         .frame(false)
                         .margin(Vec2::ZERO)
@@ -1009,7 +1194,7 @@ impl eframe::App for App {
                 &comment_layout,
             );
 
-            if let Some(response) = left_response {
+            if let Some(response) = &left_response {
                 if response.clicked() {
                     if let Some(point) = response.interact_pointer_pos() {
                         let line =
@@ -1020,7 +1205,7 @@ impl eframe::App for App {
                     }
                 }
             }
-            if let Some(response) = right_response {
+            if let Some(response) = &right_response {
                 if response.clicked() {
                     if let Some(point) = response.interact_pointer_pos() {
                         let line =
@@ -1052,6 +1237,18 @@ impl eframe::App for App {
                 }
             }
 
+            if left_response.as_ref().is_some_and(|response| response.has_focus()) {
+                self.focused_editor = Some(source_editor_id());
+            } else if right_response.as_ref().is_some_and(|response| response.has_focus()) {
+                self.focused_editor = Some(comment_editor_id());
+            }
+            if let Some(response) = &left_response {
+                editor_context_menu(response, ctx, self.focused_editor, &self.clipboard, false);
+            }
+            if let Some(response) = &right_response {
+                editor_context_menu(response, ctx, self.focused_editor, &self.clipboard, true);
+            }
+
             if !applied_sync {
                 if (new_left - self.prev_left).abs() > 0.5 {
                     self.scroll_from = 1;
@@ -1069,6 +1266,11 @@ impl eframe::App for App {
                 self.refresh();
             }
         });
+
+        let copied = ctx.output(|output| output.copied_text.clone());
+        if !copied.is_empty() {
+            self.clipboard = copied;
+        }
     }
 }
 
