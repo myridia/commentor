@@ -1,0 +1,17 @@
+@1-9
+The pure model: no GUI types here. Block holds a source range and the matching comment range, both as half-open line indices.
+
+@11-15
+pair_path appends .cmt to the full source filename inside .comments.d, so foo.rs and foo.py never map to the same comment file.
+
+@17-29
+parse_marker accepts @N or @N-M on its own line. Numbers are 1-based; the function returns 0-based start and an exclusive end, and rejects zero or reversed ranges.
+
+@31-56
+parse_blocks scans the comment text for markers. Each block runs from its marker line to the line before the next marker; the final block runs to the end of the file.
+
+@58-82
+map_line translates a line from one side to the other by finding the containing block and keeping the relative position inside it. Lines outside every block are returned unchanged.
+
+@84-94
+map_scroll maps the centre of the viewport instead of the top line, so scrolling feels anchored in the middle of the screen like in meld.

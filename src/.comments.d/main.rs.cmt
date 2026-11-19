@@ -1,0 +1,41 @@
+@1-7
+Imports: the eframe/egui widgets, the bezier shape for the link strip, the native file dialog, and plain filesystem access.
+
+@9-23
+All app state in one place: source and comment text, both paths, the status line, parsed blocks, the selected link, scroll offsets and a one-frame scroll source flag.
+
+@25-86
+paint_pane draws one pane below its TextEdit: background, one coloured band per linked block, a gutter, and line numbers for the visible lines. The same function serves both sides; source_side picks which range of a block to use.
+
+@88-132
+paint_links draws two bezier curves per block in the narrow middle strip, one for the first line and one for the last line, so a range is visible as a band rather than a single point.
+
+@134-178
+open reads a source file, derives the .cmt path beside it, and reads or starts an empty comment file. save writes only the comment file. refresh reparses blocks and drops a selection that no longer exists.
+
+@180-198
+The update loop handles Ctrl+S, then builds the toolbar with Open, Save and the status label.
+
+@200-225
+Layout maths: two equal panes, a 26 pixel link strip, 6 pixel gaps, and a 46 pixel gutter inside each pane.
+
+@227-238
+Scroll handoff. A change from one pane sets the target offset of the other for this frame; the flag is cleared so the reply cannot start a loop.
+
+@240-282
+State is cloned for the frame, then both panes and the link strip are painted before the text widgets are added, so the bands stay behind the text.
+
+@284-317
+Two ScrollAreas share the row height. The source editor is not interactive; the comment editor is editable and is where new @ markers can be typed.
+
+@319-361
+Click selection: a click on a source line, a comment line or a curve sets the selected block. Clicking the strip picks the nearest curve by vertical distance.
+
+@363-373
+Scroll detection compares the new offsets with the previous frame. applied_sync suppresses the echo from a scroll we caused ourselves.
+
+@375-382
+Any edit to the comment text triggers a reparse, so new markers and changed ranges appear in the same frame.
+
+@387-403
+Entry point. The window is 1100 by 760; an optional first argument opens that source file directly.
