@@ -25,6 +25,7 @@ Commentor shows comments that are stored outside source files. A source file `fo
 - Marker: `@N` or `@N-M` on its own line, 1-based and inclusive.
 - Text from a marker up to the next marker belongs to that block; other lines are free text.
 - Markers are stored in the `.cmt` file but hidden in the right pane; `hide_markers` blanks them without changing line numbers, and `restore_markers` puts them back after edits.
+- Blank lines between comment sections stay untinted in the right pane, so sections read clearly while the gutter still numbers every physical line.
 - The source pane is read-only in the viewer; the comment pane is editable and saved back to the `.cmt` file.
 - Each binding gets its own shade from `LINK_COLORS`; the same shade tints both pane highlights. The 44px link strip draws **two** cubic bezier curves per binding (first line and last line), each ending in a small filled triangle that points into the pane like a comic speech balloon tail. A faint band between the curves shows the range; selection brightens and thickens everything.
 - Settings: the last successfully opened source path is written to `~/.commentor/config.toml` and reopened on startup unless a path is passed as the first argument; a command-line path wins. `remember_last_file` and `show_line_numbers` are toggled in the Settings menu and saved immediately.
