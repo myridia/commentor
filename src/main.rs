@@ -439,6 +439,29 @@ fn paint_line_numbers(
     ui.set_clip_rect(old_clip);
 }
 
+fn paint_persisted_selection(
+    ui: &egui::Ui,
+    id: egui::Id,
+    galley: &egui::Galley,
+    response: &egui::Response,
+) {
+    if response.has_focus() {
+        return;
+    }
+    if let Some(state) = egui::TextEdit::load_state(ui.ctx(), id) {
+        if let Some(cursor_range) = state.cursor.range(galley) {
+            egui::text_selection::visuals::paint_text_selection(
+                ui.painter(),
+                ui.visuals(),
+                response.rect.min,
+                galley,
+                &cursor_range,
+                None,
+            );
+        }
+    }
+}
+
 fn paint_links(
     ui: &mut egui::Ui,
     strip: Rect,
@@ -661,9 +684,10 @@ impl eframe::App for App {
             self.save();
         }
 
+        let mut menu_open = false;
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
+                menu_open |= ui.menu_button("File", |ui| {
                     if ui.button("Open Source...").clicked() {
                         if let Some(path) = FileDialog::new().pick_file() {
                             self.open(path);
@@ -679,8 +703,8 @@ impl eframe::App for App {
                         ctx.send_viewport_cmd(egui::viewport::ViewportCommand::Close);
                         ui.close_menu();
                     }
-                });
-                ui.menu_button("Edit", |ui| {
+                }).inner.is_some();
+                menu_open |= ui.menu_button("Edit", |ui| {
                     let command = egui::Modifiers::COMMAND;
                     let focused = self.focused_editor;
                     editor_menu_item(
@@ -741,8 +765,8 @@ impl eframe::App for App {
                         egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Delete),
                         key_event(egui::Key::Delete, egui::Modifiers::NONE),
                     );
-                });
-                ui.menu_button("View", |ui| {
+                }).inner.is_some();
+                menu_open |= ui.menu_button("View", |ui| {
                     if ui.button("Next Link").clicked() {
                         self.select_relative(1);
                         ui.close_menu();
@@ -759,8 +783,8 @@ impl eframe::App for App {
                         self.scroll_from = 0;
                         ui.close_menu();
                     }
-                });
-                ui.menu_button("Settings", |ui| {
+                }).inner.is_some();
+                menu_open |= ui.menu_button("Settings", |ui| {
                     if ui
                         .checkbox(&mut self.config.remember_last_file, "Remember last file")
                         .changed()
@@ -933,8 +957,8 @@ impl eframe::App for App {
                         self.save_settings();
                         ui.close_menu();
                     }
-                });
-                ui.menu_button("Help", |ui| {
+                }).inner.is_some();
+                menu_open |= ui.menu_button("Help", |ui| {
                     if ui.button("Project Page").clicked() {
                         open_target("https://github.com/myridia/commentor");
                         ui.close_menu();
@@ -943,8 +967,9 @@ impl eframe::App for App {
                         self.status = "commentor 0.1.0 - comments beside source files".to_string();
                         ui.close_menu();
                     }
-                });
+                }).inner.is_some();
             });
+            if menu_open { if let Some(id) = self.focused_editor { ctx.memory_mut(|memory| memory.request_focus(id)); } }
         });
 
         egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
@@ -996,7 +1021,7 @@ impl eframe::App for App {
             let syntax_palette = highlight::Palette::new(dark, &self.config.syntax_theme);
             let language = self.active_language();
             let plain_color = ui.visuals().widgets.inactive.text_color();
-            let source_layout = {
+            let (source_galley, source_layout) = {
                 let mut job = if self.config.highlight {
                     highlight::layout_job(
                         &source_edit,
@@ -1015,7 +1040,8 @@ impl eframe::App for App {
                 };
                 job.wrap.max_width = f32::INFINITY;
                 let galley = ui.fonts(|fonts| fonts.layout_job(job));
-                LineLayout::from_galley(&galley, source_lines.len(), source_row_h)
+                let layout = LineLayout::from_galley(&galley, source_lines.len(), source_row_h);
+                (galley, layout)
             };
             let wrap_comments = self.config.comment_wrap;
             let comment_wrap_w =
@@ -1031,9 +1057,11 @@ impl eframe::App for App {
                 plain_color,
                 comment_wrap_width,
             );
-            let comment_galley = ui.fonts(|fonts| fonts.layout_job(comment_job));
-            let comment_layout =
-                LineLayout::from_galley(&comment_galley, comment_lines.len(), comment_row_h);
+            let (comment_galley, comment_layout) = {
+                let galley = ui.fonts(|fonts| fonts.layout_job(comment_job));
+                let layout = LineLayout::from_galley(&galley, comment_lines.len(), comment_row_h);
+                (galley, layout)
+            };
 
             let mut target_left = self.left_offset;
             let mut target_right = self.right_offset;
@@ -1126,7 +1154,11 @@ impl eframe::App for App {
                         .margin(Vec2::ZERO)
                         .font(source_font.clone())
                         .layouter(&mut source_layouter);
-                    left_response = Some(ui.add(editor));
+                    let response = ui.add(editor);
+                    if menu_open {
+                        paint_persisted_selection(ui, source_editor_id(), &source_galley, &response);
+                    }
+                    left_response = Some(response);
                 });
 
             let mut comment_layouter =
@@ -1175,7 +1207,11 @@ impl eframe::App for App {
                         .margin(Vec2::ZERO)
                         .font(comment_font.clone())
                         .layouter(&mut comment_layouter);
-                    right_response = Some(ui.add(editor));
+                    let response = ui.add(editor);
+                    if menu_open {
+                        paint_persisted_selection(ui, comment_editor_id(), &comment_galley, &response);
+                    }
+                    right_response = Some(response);
                 });
 
             let new_left = left_output.state.offset.y;
