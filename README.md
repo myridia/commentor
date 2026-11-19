@@ -27,7 +27,7 @@ Markers stay in the `.cmt` file, but the right pane hides the `@` lines while ke
 - Open a source file with **File → Open Source...** or pass it as the first argument. The last opened file is saved in `~/.commentor/config.toml` and reopened on the next launch; a command-line path wins.
 - Save the comment pane with **File → Save Comments** or `Ctrl+S`.
 - Click a highlighted line or a curve to select a link; both panes scroll together through the mapped blocks. **View → Next/Previous Link** walks the bindings.
-- Each code↔comment binding has its own tint in both panes and a matching curve in the strip; the selected binding is brighter.
+- Each code↔comment binding has its own tint in both panes and **two** cubic bezier curves in the strip. Each curve ends in a small filled triangle that points into the pane like a comic speech balloon tail, so the top and bottom of a block are visibly separate. The selected binding is brighter and thicker.
 - **Settings** toggles line numbers and last-file memory, and writes them back to the TOML config immediately.
 - Edit the right pane and use **File → Save Comments** or `Ctrl+S` to write the `.cmt` file back.
 
@@ -42,7 +42,7 @@ example/
     └── hello.rs.cmt
 ```
 
-Open `example/hello.rs`; the paired `.cmt` file explains each block of the source. This is the file used by the **Run example** task.
+Open `example/hello.rs`; the paired `.cmt` file explains each block of the source. It has long comments, short ones and empty ones, with blank lines between sections so each block is easy to spot in the right pane. This is the file used by the **Run example** task.
 
 ```bash
 cargo run -- example/hello.rs

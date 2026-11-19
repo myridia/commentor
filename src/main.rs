@@ -135,13 +135,19 @@ fn paint_links(
     right_offset: f32,
     row_h: f32,
 ) {
-    ui.set_clip_rect(strip);
+    let x0 = left.max.x;
+    let x1 = right.min.x;
+    let link_area = Rect::from_min_max(
+        Pos2::new(x0 - 10.0, strip.min.y),
+        Pos2::new(x1 + 10.0, strip.max.y),
+    );
+    ui.set_clip_rect(link_area);
     let painter = ui.painter();
     painter.rect_filled(strip, 2.0, ui.visuals().faint_bg_color);
 
-    let x0 = left.max.x;
-    let x1 = right.min.x;
     let middle = (x0 + x1) * 0.5;
+    let tail = 7.0;
+    let half = 4.0;
 
     for (index, block) in blocks.iter().enumerate() {
         let left_y0 = left.min.y + block.src_start as f32 * row_h - left_offset;
@@ -151,6 +157,18 @@ fn paint_links(
         let is_selected = selected == Some(index);
         let color = link_stroke_color(index, is_selected);
         let width = if is_selected { 2.4 } else { 1.5 };
+
+        painter.add(egui::Shape::convex_polygon(
+            vec![
+                Pos2::new(x0, left_y0),
+                Pos2::new(x0, left_y1),
+                Pos2::new(x1, right_y1),
+                Pos2::new(x1, right_y0),
+            ],
+            link_tint_color(index, false),
+            Stroke::NONE,
+        ));
+
         for &(from_y, to_y) in &[(left_y0, right_y0), (left_y1, right_y1)] {
             painter.add(CubicBezierShape {
                 points: [
@@ -163,6 +181,25 @@ fn paint_links(
                 fill: Color32::TRANSPARENT,
                 stroke: Stroke::new(width, color).into(),
             });
+
+            painter.add(egui::Shape::convex_polygon(
+                vec![
+                    Pos2::new(x0 - tail, from_y),
+                    Pos2::new(x0, from_y - half),
+                    Pos2::new(x0, from_y + half),
+                ],
+                color,
+                Stroke::NONE,
+            ));
+            painter.add(egui::Shape::convex_polygon(
+                vec![
+                    Pos2::new(x1 + tail, to_y),
+                    Pos2::new(x1, to_y - half),
+                    Pos2::new(x1, to_y + half),
+                ],
+                color,
+                Stroke::NONE,
+            ));
         }
     }
     let screen_rect = ui.ctx().screen_rect();
@@ -354,7 +391,7 @@ impl eframe::App for App {
             let row_h = ui.fonts(|fonts| fonts.row_height(&font_id));
             let gutter_w = 46.0;
             let gap = 6.0;
-            let strip_w = 26.0;
+            let strip_w = 44.0;
             let pane_w = ((area.width() - strip_w - gap * 2.0) / 2.0).max(160.0);
             let pane_h = area.height().max(60.0);
 

@@ -10,50 +10,50 @@ All app state in one struct: source and comment text, both paths, status line, p
 @64-125
 paint_pane draws one pane below its TextEdit: background, one coloured band per linked block, a gutter, and line numbers for the visible lines when the setting is on. The same function serves both sides; source_side picks which range of a block to use.
 
-@127-170
-paint_links draws two bezier curves per block in the narrow middle strip, one for the first line and one for the last line, so a range is visible as a band rather than a single point. The selected binding is drawn wider.
+@127-207
+paint_links draws two cubic bezier curves per block in the 44 pixel middle strip, one for the first line and one for the last line. Each curve ends in a small filled triangle that points into the pane like a comic speech balloon tail. A faint band between the curves shows the whole range, and selection brightens and thickens everything.
 
-@172-216
+@209-253
 open reads a source file, derives the .cmt path beside it, reads or starts an empty comment file, and remembers the source path. save writes only the comment file. refresh reparses blocks and drops a selection that no longer exists.
 
-@218-235
+@255-272
 Settings persistence: remember_last_file writes the current source path into config.toml; save_settings writes the whole config and reports the result in the status line.
 
-@237-248
+@274-285
 Link navigation wraps around the block list, starting from the first link when moving forward and the last one when moving backward.
 
-@251-260
+@288-297
 open_target is the platform shim used by the Help and Settings menus for URLs and for the config file path: cmd /C start on Windows, open on macOS, xdg-open elsewhere.
 
-@262-266
+@299-303
 The update loop still handles Ctrl+S by saving the comment pane.
 
-@268-345
+@305-382
 A classic top menu in a TopBottomPanel, built with egui::menu::bar and menu_button like ct. File opens/saves/exits; View moves between links and resets scroll; Settings toggles and saves preferences; Help opens the project page and shows About.
 
-@347-349
+@384-386
 The status line lives in a bottom TopBottomPanel, so the central panel is reserved for the two panes.
 
-@351-377
-Layout maths: two equal panes, a 26 pixel link strip, 6 pixel gaps, and a 46 pixel gutter inside each pane.
+@388-414
+Layout maths: two equal panes, a 44 pixel link strip with room for the bezier tails, 6 pixel gaps, and a 46 pixel gutter inside each pane.
 
-@379-390
+@416-427
 Scroll handoff. A change from one pane sets the target offset of the other for this frame; the flag is cleared so the reply cannot start a loop.
 
-@392-437
+@429-474
 State is cloned for the frame. comments_display blanks out the @ marker lines while keeping their line count, so the right pane shows only the comment text; the canonical markers stay in self.comments for parsing and saving. Both panes and the link strip are painted before the text widgets are added, so the bands stay behind the text.
 
-@439-472
+@476-509
 Two ScrollAreas share the row height. The source editor is not interactive; the comment editor is editable and shows the marker-free view of the .cmt file.
 
-@474-516
+@511-553
 Click selection: a click on a source line, a comment line or a curve sets the selected block. Clicking the strip picks the nearest curve by vertical distance.
 
-@518-528
+@555-565
 Scroll detection compares the new offsets with the previous frame. applied_sync suppresses the echo from a scroll we caused ourselves.
 
-@530-537
+@567-574
 Any edit to the visible comment text is mapped back into the canonical file with restore_markers, then triggers a reparse, so new markers and changed ranges appear in the same frame.
 
-@542-569
+@579-606
 Entry point. The window is 1100 by 760; settings are loaded first, then a command-line path is opened, otherwise the remembered last file if that setting is enabled.

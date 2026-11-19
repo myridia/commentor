@@ -14,7 +14,7 @@ get_config loads the config or initializes it on first run. If anything fails, i
 save_config writes pretty TOML to ~/.commentor/config.toml, creating the parent directory first.
 
 @81-89
-config_path resolves the home directory and returns ~/.commentor/config.toml. Keeping commentor's settings in their own folder avoids colliding with couchy's ~/config.toml.
+config_path resolves the home directory and returns ~/.commentor/config.toml. Keeping commentor's settings in their own folder avoids colliding with couchy's config.toml.
 
 @91-102
 load_or_initialize parses an existing config file; when none exists it writes a default one immediately so the settings file is there from the first launch.
