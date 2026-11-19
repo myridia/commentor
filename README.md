@@ -26,7 +26,7 @@ Markers stay in the `.cmt` file, but the right pane hides the `@` lines while ke
 
 - Open a source file with **File → Open Source...** or pass it as the first argument. The last opened file is saved in `~/.commentor/config.toml` and reopened on the next launch; a command-line path wins.
 - Save the comment pane with **File → Save Comments** or `Ctrl+S`.
-- Use the usual editing commands in either pane: `Ctrl+C` / `Ctrl+X` / `Ctrl+V` / `Ctrl+A`, plus `Ctrl+Z` / `Ctrl+Y`. The **Edit** menu and the right-click context menu offer the same actions; Copy and Select All also work in the read-only source pane.
+- Use the usual editing commands in either pane: `Ctrl+C` / `Ctrl+X` / `Ctrl+V` / `Ctrl+A`, plus `Ctrl+Z` / `Ctrl+Y`. The **Edit** menu and the right-click context menu offer the same actions. Copy and Select All also work in the read-only source pane; the other Edit actions are disabled there.
 - Click a highlighted line or a curve to select a link; both panes scroll together through the mapped blocks. **View → Next/Previous Link** walks the bindings.
 - Each code↔comment binding has its own tint in both panes and **two** cubic bezier curves in the strip. Each curve ends in a small filled triangle that points into the pane like a comic speech balloon tail, so the top and bottom of a block are visibly separate. The selected binding is brighter and thicker.
 - The source pane has syntax highlighting for Rust, Python, JavaScript, TypeScript, C, C++, Go, Java, JSON, TOML, shell, HTML, CSS and SQL. The language is detected from the file extension; **Settings → Language** can override it or turn highlighting off.

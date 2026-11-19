@@ -55,7 +55,7 @@ cargo run -- path/to/foo.rs
 A classic top menu in a `TopBottomPanel`, built with `egui::menu::bar` + `ui.menu_button` (same pattern as ct):
 
 - **File** — Open Source..., Save Comments, Exit
-- **Edit** — Undo, Redo, Cut, Copy, Paste, Select All, Delete; the same commands are on each pane's right-click menu. Keyboard shortcuts work directly in the focused `TextEdit`. Copy and Select All also work in the read-only source pane.
+- **Edit** — Undo, Redo, Cut, Copy, Paste, Select All, Delete; the same commands are on each pane's right-click menu. Keyboard shortcuts work directly in the focused `TextEdit`. Copy and Select All also work in the read-only source pane; the other Edit actions are disabled there.
 - **View** — Next Link, Previous Link, Reset Scroll
 - **Settings** — Remember last file, Show line numbers, Theme (dark/light), Colors (blue/green/purple/warm/pink/neutral), Syntax highlighting, Language (auto plus 14 languages), Highlight palette (default/vivid/soft), Space lines, Source font, Comment font, Open Settings File, Save Settings Now
 - **Help** — Project Page, About

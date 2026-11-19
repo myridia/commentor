@@ -84,7 +84,7 @@ fn editor_menu_item(
     event: egui::Event,
 ) {
     let button = egui::Button::new(label).shortcut_text(ctx.format_shortcut(&shortcut));
-    if ui.add(button).clicked() {
+    if ui.add_enabled(focused != Some(source_editor_id()) || matches!(label, "Copy" | "Select All"), button).clicked() {
         run_editor_action(ctx, focused, event);
         ui.close_menu();
     }
