@@ -22,14 +22,16 @@ Comment for lines 88 through 91.
 
 ## Use
 
-- Open a source file with **Open** or pass it as the first argument.
-- Click a highlighted line or a curve to select a link; both panes scroll together through the mapped blocks.
+- Open a source file with **File → Open Source...** or pass it as the first argument. The last opened file is saved in `~/.commentor/config.toml` and reopened on the next launch; a command-line path wins.
+- Save the comment pane with **File → Save Comments** or `Ctrl+S`.
+- Click a highlighted line or a curve to select a link; both panes scroll together through the mapped blocks. **View → Next/Previous Link** walks the bindings.
 - Each code↔comment binding has its own tint in both panes and a matching curve in the strip; the selected binding is brighter.
-- Edit the right pane and press **Save** or `Ctrl+S` to write the `.cmt` file back.
+- **Settings** toggles line numbers and last-file memory, and writes them back to the TOML config immediately.
+- Edit the right pane and use **File → Save Comments** or `Ctrl+S` to write the `.cmt` file back.
 
 ## Example
 
-Commentor's own source is the example. Open `src/main.rs` or `src/lib.rs`; their comment files live in `src/.comments.d/` and describe what each block of code does.
+Commentor's own source is the example. Open `src/main.rs`, `src/lib.rs` or `src/config.rs`; their comment files live in `src/.comments.d/` and describe what each block of code does.
 
 ```bash
 cargo run -- src/main.rs

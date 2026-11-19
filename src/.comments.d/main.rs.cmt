@@ -1,41 +1,59 @@
-@1-7
-Imports: the eframe/egui widgets, the bezier shape for the link strip, the native file dialog, and plain filesystem access.
+@1-10
+The config module plus imports: eframe/egui widgets, the bezier shape for the link strip, the native file dialog, filesystem access and PathBuf.
 
-@9-23
-All app state in one place: source and comment text, both paths, the status line, parsed blocks, the selected link, scroll offsets and a one-frame scroll source flag.
+@12-45
+The binding palette. Each link index gets a slightly different cool shade; the same shade is used for the pane tint and the curve. Selection brightens the colour and thickens the stroke.
 
-@25-86
-paint_pane draws one pane below its TextEdit: background, one coloured band per linked block, a gutter, and line numbers for the visible lines. The same function serves both sides; source_side picks which range of a block to use.
+@47-62
+All app state in one struct: source and comment text, both paths, status line, parsed blocks, selected link, scroll offsets, the one-frame scroll source flag, and the TOML settings.
 
-@88-132
-paint_links draws two bezier curves per block in the narrow middle strip, one for the first line and one for the last line, so a range is visible as a band rather than a single point.
+@64-125
+paint_pane draws one pane below its TextEdit: background, one coloured band per linked block, a gutter, and line numbers for the visible lines when the setting is on. The same function serves both sides; source_side picks which range of a block to use.
 
-@134-178
-open reads a source file, derives the .cmt path beside it, and reads or starts an empty comment file. save writes only the comment file. refresh reparses blocks and drops a selection that no longer exists.
+@127-170
+paint_links draws two bezier curves per block in the narrow middle strip, one for the first line and one for the last line, so a range is visible as a band rather than a single point. The selected binding is drawn wider.
 
-@180-198
-The update loop handles Ctrl+S, then builds the toolbar with Open, Save and the status label.
+@172-216
+open reads a source file, derives the .cmt path beside it, reads or starts an empty comment file, and remembers the source path. save writes only the comment file. refresh reparses blocks and drops a selection that no longer exists.
 
-@200-225
+@218-235
+Settings persistence: remember_last_file writes the current source path into config.toml; save_settings writes the whole config and reports the result in the status line.
+
+@237-248
+Link navigation wraps around the block list, starting from the first link when moving forward and the last one when moving backward.
+
+@251-260
+open_target is the platform shim used by the Help and Settings menus for URLs and for the config file path: cmd /C start on Windows, open on macOS, xdg-open elsewhere.
+
+@262-266
+The update loop still handles Ctrl+S by saving the comment pane.
+
+@268-345
+A classic top menu in a TopBottomPanel, built with egui::menu::bar and menu_button like ct. File opens/saves/exits; View moves between links and resets scroll; Settings toggles and saves preferences; Help opens the project page and shows About.
+
+@347-349
+The status line lives in a bottom TopBottomPanel, so the central panel is reserved for the two panes.
+
+@351-377
 Layout maths: two equal panes, a 26 pixel link strip, 6 pixel gaps, and a 46 pixel gutter inside each pane.
 
-@227-238
+@379-390
 Scroll handoff. A change from one pane sets the target offset of the other for this frame; the flag is cleared so the reply cannot start a loop.
 
-@240-282
+@392-436
 State is cloned for the frame, then both panes and the link strip are painted before the text widgets are added, so the bands stay behind the text.
 
-@284-317
+@438-471
 Two ScrollAreas share the row height. The source editor is not interactive; the comment editor is editable and is where new @ markers can be typed.
 
-@319-361
+@473-515
 Click selection: a click on a source line, a comment line or a curve sets the selected block. Clicking the strip picks the nearest curve by vertical distance.
 
-@363-373
+@517-527
 Scroll detection compares the new offsets with the previous frame. applied_sync suppresses the echo from a scroll we caused ourselves.
 
-@375-382
+@529-536
 Any edit to the comment text triggers a reparse, so new markers and changed ranges appear in the same frame.
 
-@387-403
-Entry point. The window is 1100 by 760; an optional first argument opens that source file directly.
+@541-568
+Entry point. The window is 1100 by 760; settings are loaded first, then a command-line path is opened, otherwise the remembered last file if that setting is enabled.

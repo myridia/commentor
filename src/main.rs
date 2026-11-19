@@ -1,4 +1,7 @@
+mod config;
+
 use commentor::{map_scroll, pair_path, parse_blocks, Block};
+use config::AppConfig;
 use eframe::egui;
 use egui::epaint::CubicBezierShape;
 use egui::{Align2, Color32, FontId, Pos2, Rect, Stroke, Vec2};
@@ -55,6 +58,7 @@ struct App {
     prev_left: f32,
     prev_right: f32,
     scroll_from: u8,
+    config: AppConfig,
 }
 
 fn paint_pane(
@@ -68,6 +72,7 @@ fn paint_pane(
     row_h: f32,
     font_id: &FontId,
     source_side: bool,
+    show_line_numbers: bool,
 ) {
     ui.set_clip_rect(pane);
     let painter = ui.painter();
@@ -101,17 +106,19 @@ fn paint_pane(
         ui.visuals().faint_bg_color,
     );
 
-    let first = (offset / row_h).floor().max(0.0) as usize;
-    let count = (pane.height() / row_h).ceil() as usize + 2;
-    for line in first..(first + count).min(lines.len()) {
-        let y = pane.min.y + line as f32 * row_h - offset;
-        painter.text(
-            Pos2::new(pane.min.x + 4.0, y),
-            Align2::LEFT_TOP,
-            (line + 1).to_string(),
-            font_id.clone(),
-            Color32::GRAY,
-        );
+    if show_line_numbers {
+        let first = (offset / row_h).floor().max(0.0) as usize;
+        let count = (pane.height() / row_h).ceil() as usize + 2;
+        for line in first..(first + count).min(lines.len()) {
+            let y = pane.min.y + line as f32 * row_h - offset;
+            painter.text(
+                Pos2::new(pane.min.x + 4.0, y),
+                Align2::LEFT_TOP,
+                (line + 1).to_string(),
+                font_id.clone(),
+                Color32::GRAY,
+            );
+        }
     }
     let screen_rect = ui.ctx().screen_rect();
     ui.set_clip_rect(screen_rect);
@@ -173,6 +180,7 @@ impl App {
                 self.comment_path = Some(pair);
                 self.status = format!("opened {}", path.display());
                 self.refresh();
+                self.remember_last_file();
             }
             Err(error) => {
                 self.status = format!("open failed: {error}");
@@ -206,6 +214,49 @@ impl App {
             }
         }
     }
+
+    fn remember_last_file(&mut self) {
+        if !self.config.remember_last_file {
+            return;
+        }
+        if let Some(path) = &self.source_path {
+            self.config.last_file = Some(path.to_string_lossy().into_owned());
+            if let Err(error) = config::save_config(&self.config) {
+                self.status.push_str(&format!(" (settings save failed: {error:?})"));
+            }
+        }
+    }
+
+    fn save_settings(&mut self) {
+        match config::save_config(&self.config) {
+            Ok(()) => self.status = "settings saved".to_string(),
+            Err(error) => self.status = format!("settings save failed: {error:?}"),
+        }
+    }
+
+    fn select_relative(&mut self, step: isize) {
+        if self.blocks.is_empty() {
+            self.selected = None;
+            return;
+        }
+        let current = self
+            .selected
+            .map(|index| index as isize)
+            .unwrap_or(if step > 0 { -1 } else { 0 });
+        let next = (current + step).rem_euclid(self.blocks.len() as isize) as usize;
+        self.selected = Some(next);
+    }
+}
+
+fn open_target(target: &str) {
+    #[cfg(target_os = "windows")]
+    let _ = std::process::Command::new("cmd")
+        .args(["/C", "start", "", target])
+        .spawn();
+    #[cfg(target_os = "macos")]
+    let _ = std::process::Command::new("open").arg(target).spawn();
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    let _ = std::process::Command::new("xdg-open").arg(target).spawn();
 }
 
 impl eframe::App for App {
@@ -214,20 +265,90 @@ impl eframe::App for App {
             self.save();
         }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                if ui.button("Open").clicked() {
-                    if let Some(path) = FileDialog::new().pick_file() {
-                        self.open(path);
+        egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
+            egui::menu::bar(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Open Source...").clicked() {
+                        if let Some(path) = FileDialog::new().pick_file() {
+                            self.open(path);
+                        }
+                        ui.close_menu();
                     }
-                }
-                if ui.button("Save").clicked() {
-                    self.save();
-                }
-                ui.label(&self.status);
+                    if ui.button("Save Comments").clicked() {
+                        self.save();
+                        ui.close_menu();
+                    }
+                    ui.separator();
+                    if ui.button("Exit").clicked() {
+                        ctx.send_viewport_cmd(egui::viewport::ViewportCommand::Close);
+                        ui.close_menu();
+                    }
+                });
+                ui.menu_button("View", |ui| {
+                    if ui.button("Next Link").clicked() {
+                        self.select_relative(1);
+                        ui.close_menu();
+                    }
+                    if ui.button("Previous Link").clicked() {
+                        self.select_relative(-1);
+                        ui.close_menu();
+                    }
+                    if ui.button("Reset Scroll").clicked() {
+                        self.left_offset = 0.0;
+                        self.right_offset = 0.0;
+                        self.prev_left = 0.0;
+                        self.prev_right = 0.0;
+                        self.scroll_from = 0;
+                        ui.close_menu();
+                    }
+                });
+                ui.menu_button("Settings", |ui| {
+                    if ui
+                        .checkbox(&mut self.config.remember_last_file, "Remember last file")
+                        .changed()
+                    {
+                        if !self.config.remember_last_file {
+                            self.config.last_file = None;
+                        }
+                        self.save_settings();
+                    }
+                    if ui
+                        .checkbox(&mut self.config.show_line_numbers, "Show line numbers")
+                        .changed()
+                    {
+                        self.save_settings();
+                    }
+                    ui.separator();
+                    if ui.button("Open Settings File").clicked() {
+                        if let Ok(path) = config::config_path() {
+                            let target = path.to_string_lossy().into_owned();
+                            open_target(&target);
+                        }
+                        ui.close_menu();
+                    }
+                    if ui.button("Save Settings Now").clicked() {
+                        self.save_settings();
+                        ui.close_menu();
+                    }
+                });
+                ui.menu_button("Help", |ui| {
+                    if ui.button("Project Page").clicked() {
+                        open_target("https://github.com/myridia/commentor");
+                        ui.close_menu();
+                    }
+                    if ui.button("About").clicked() {
+                        self.status = "commentor 0.1.0 - comments beside source files".to_string();
+                        ui.close_menu();
+                    }
+                });
             });
-            ui.separator();
+        });
 
+        egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
+            ui.label(&self.status);
+        });
+
+        egui::CentralPanel::default().show(ctx, |ui| {
             let area = ui.available_rect_before_wrap();
             let font_id = FontId::monospace(13.0);
             let row_h = ui.fonts(|fonts| fonts.row_height(&font_id));
@@ -287,6 +408,7 @@ impl eframe::App for App {
                 row_h,
                 &font_id,
                 true,
+                self.config.show_line_numbers,
             );
             paint_pane(
                 ui,
@@ -299,6 +421,7 @@ impl eframe::App for App {
                 row_h,
                 &font_id,
                 false,
+                self.config.show_line_numbers,
             );
             paint_links(
                 ui,
@@ -424,9 +547,20 @@ fn main() -> Result<(), eframe::Error> {
         "commentor",
         options,
         Box::new(|_cc| {
-            let mut app = App::default();
-            if let Some(argument) = std::env::args().nth(1) {
-                app.open(PathBuf::from(argument));
+            let config = config::get_config();
+            let mut app = App {
+                config,
+                ..Default::default()
+            };
+            let start_path = std::env::args().nth(1).or_else(|| {
+                if app.config.remember_last_file {
+                    app.config.last_file.clone()
+                } else {
+                    None
+                }
+            });
+            if let Some(path) = start_path {
+                app.open(PathBuf::from(path));
             }
             Ok(Box::new(app))
         }),
