@@ -4,7 +4,7 @@
 
 A two-pane viewer for comments that live outside the source file.
 
-`foo.rs` is paired with `.comments.d/foo.rs.cmt` in the same directory. The left pane shows the source, the right pane shows the comment file, and a link strip draws curves between the comment blocks and the source lines they describe.
+`foo.rs` is paired with `.comments.d/foo.rs.cmt` in the same directory. The wider left pane shows the source, the right pane shows the comment file, and a narrow link strip draws curves between the comment blocks and the source lines they describe.
 
 ## Marker syntax
 
@@ -30,7 +30,7 @@ Markers stay in the `.cmt` file, but the right pane hides the `@` lines while ke
 - Each code↔comment binding has its own tint in both panes and **two** cubic bezier curves in the strip. Each curve ends in a small filled triangle that points into the pane like a comic speech balloon tail, so the top and bottom of a block are visibly separate. The selected binding is brighter and thicker.
 - The source pane has syntax highlighting for Rust, Python, JavaScript, TypeScript, C, C++, Go, Java, JSON, TOML, shell, HTML, CSS and SQL. The language is detected from the file extension; **Settings → Language** can override it or turn highlighting off.
 - **Settings → Theme** switches between dark and light egui themes, and **Settings → Colors** picks blue, green, purple, warm, pink or neutral accents. **Settings → Highlight** picks the default, vivid or soft syntax palette.
-- **Settings** also controls line numbers, last-file memory, the number of blank lines between comment sections (`Space lines`, default **2**), and separate source/comment font sizes. Every change is written back to the TOML config immediately.
+- **Settings** also controls line numbers, last-file memory, comment wrapping, the number of blank lines between comment sections (`Space lines`, default **2**), and separate source/comment font sizes. Every change is written back to the TOML config immediately. Turn on **Wrap comment text** to wrap long comments in the right pane; the source pane always stays unwrapped.
 - Edit the right pane and use **File → Save Comments** or `Ctrl+S` to write the `.cmt` file back.
 
 ## Example

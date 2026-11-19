@@ -2,7 +2,7 @@ mod config;
 mod highlight;
 
 use commentor::{
-    hide_markers, map_scroll, normalize_spacing, pair_path, parse_blocks, restore_markers, Block,
+    hide_markers, map_line, normalize_spacing, pair_path, parse_blocks, restore_markers, Block,
 };
 use config::AppConfig;
 use eframe::egui;
@@ -165,6 +165,83 @@ struct App {
     config: AppConfig,
 }
 
+#[derive(Default, Clone)]
+struct LineLayout {
+    tops: Vec<f32>,
+    height: f32,
+    row_h: f32,
+}
+
+impl LineLayout {
+    fn uniform(lines: usize, row_h: f32) -> Self {
+        let tops = (0..lines).map(|index| index as f32 * row_h).collect();
+        Self {
+            tops,
+            height: lines as f32 * row_h,
+            row_h,
+        }
+    }
+
+    fn from_galley(galley: &egui::Galley, lines: usize, row_h: f32) -> Self {
+        let mut tops = Vec::with_capacity(lines);
+        let mut line = 0;
+        for row in &galley.rows {
+            if line == tops.len() && tops.len() < lines {
+                tops.push(row.rect.top());
+            }
+            if row.ends_with_newline {
+                line += 1;
+            }
+        }
+        while tops.len() < lines {
+            let last = tops.last().copied().unwrap_or(0.0);
+            tops.push(last + row_h);
+        }
+        Self {
+            tops,
+            height: galley.rect.height(),
+            row_h,
+        }
+    }
+
+    fn top(&self, line: f32) -> f32 {
+        if self.tops.is_empty() {
+            return line.max(0.0) * self.row_h;
+        }
+        let index = (line.max(0.0).floor() as usize).min(self.tops.len() - 1);
+        let start = self.tops[index];
+        let end = self.tops.get(index + 1).copied().unwrap_or(self.height);
+        let frac = (line - index as f32).clamp(0.0, 1.0);
+        start + (end - start) * frac
+    }
+
+    fn line_at(&self, y: f32) -> usize {
+        if self.tops.is_empty() {
+            return 0;
+        }
+        match self
+            .tops
+            .binary_search_by(|top| top.partial_cmp(&y).unwrap_or(std::cmp::Ordering::Equal))
+        {
+            Ok(index) => index,
+            Err(0) => 0,
+            Err(index) => index - 1,
+        }
+    }
+
+    fn line_position(&self, y: f32) -> f32 {
+        let index = self.line_at(y);
+        let start = self.tops.get(index).copied().unwrap_or(0.0);
+        let end = self.tops.get(index + 1).copied().unwrap_or(self.height);
+        let frac = if end > start {
+            ((y - start) / (end - start)).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        index as f32 + frac
+    }
+}
+
 fn paint_pane(
     ui: &mut egui::Ui,
     pane: Rect,
@@ -173,7 +250,7 @@ fn paint_pane(
     blocks: &[Block],
     selected: Option<usize>,
     offset: f32,
-    row_h: f32,
+    layout: &LineLayout,
     font_id: &FontId,
     source_side: bool,
     show_line_numbers: bool,
@@ -196,8 +273,8 @@ fn paint_pane(
             }
             (block.cmt_start, end)
         };
-        let y0 = pane.min.y + start as f32 * row_h - offset;
-        let y1 = pane.min.y + end as f32 * row_h - offset;
+        let y0 = pane.min.y + layout.top(start as f32) - offset;
+        let y1 = pane.min.y + layout.top(end as f32) - offset;
         let top = y0 - 2.0;
         let bottom = (y1 + 2.0).max(top + 1.0);
         let color = link_tint_color(index, selected == Some(index));
@@ -221,10 +298,13 @@ fn paint_pane(
     );
 
     if show_line_numbers {
-        let first = (offset / row_h).floor().max(0.0) as usize;
-        let count = (pane.height() / row_h).ceil() as usize + 2;
+        let first = layout.line_at(offset);
+        let count = (pane.height() / layout.row_h).ceil() as usize + 2;
         for line in first..(first + count).min(lines.len()) {
-            let y = pane.min.y + line as f32 * row_h - offset;
+            let y = pane.min.y + layout.top(line as f32) - offset;
+            if y > pane.max.y {
+                break;
+            }
             painter.text(
                 Pos2::new(pane.min.x + 4.0, y),
                 Align2::LEFT_TOP,
@@ -247,8 +327,8 @@ fn paint_links(
     selected: Option<usize>,
     left_offset: f32,
     right_offset: f32,
-    left_row_h: f32,
-    right_row_h: f32,
+    left_layout: &LineLayout,
+    right_layout: &LineLayout,
 ) {
     let x0 = left.max.x;
     let x1 = right.min.x;
@@ -265,10 +345,10 @@ fn paint_links(
     let half = 4.0;
 
     for (index, block) in blocks.iter().enumerate() {
-        let left_y0 = left.min.y + block.src_start as f32 * left_row_h - left_offset;
-        let left_y1 = left.min.y + block.src_end as f32 * left_row_h - left_offset;
-        let right_y0 = right.min.y + block.cmt_start as f32 * right_row_h - right_offset;
-        let right_y1 = right.min.y + block.cmt_end as f32 * right_row_h - right_offset;
+        let left_y0 = left.min.y + left_layout.top(block.src_start as f32) - left_offset;
+        let left_y1 = left.min.y + left_layout.top(block.src_end as f32) - left_offset;
+        let right_y0 = right.min.y + right_layout.top(block.cmt_start as f32) - right_offset;
+        let right_y1 = right.min.y + right_layout.top(block.cmt_end as f32) - right_offset;
         let is_selected = selected == Some(index);
         let color = link_stroke_color(index, is_selected);
         let width = if is_selected { 2.4 } else { 1.5 };
@@ -513,6 +593,12 @@ impl eframe::App for App {
                     {
                         self.save_settings();
                     }
+                    if ui
+                        .checkbox(&mut self.config.comment_wrap, "Wrap comment text")
+                        .changed()
+                    {
+                        self.save_settings();
+                    }
                     ui.separator();
                     ui.horizontal(|ui| {
                         ui.label("Theme:");
@@ -690,55 +776,30 @@ impl eframe::App for App {
             let comment_row_h = ui.fonts(|fonts| fonts.row_height(&comment_font));
             let source_gutter = gutter_width(ui, &source_font, self.source.lines().count());
             let comment_gutter = gutter_width(ui, &comment_font, self.comments.lines().count());
-            let gap = 6.0;
-            let strip_w = 44.0;
-            let pane_w = ((area.width() - strip_w - gap * 2.0) / 2.0).max(160.0);
+            let gap = 4.0;
+            let strip_w = 24.0;
+            let panes_w = (area.width() - strip_w - gap * 2.0).max(320.0);
+            let source_w = panes_w * 0.58;
+            let comment_w = panes_w - source_w;
             let pane_h = area.height().max(60.0);
 
-            let left_rect = Rect::from_min_size(area.min, Vec2::new(pane_w, pane_h));
+            let left_rect = Rect::from_min_size(area.min, Vec2::new(source_w, pane_h));
             let strip_rect = Rect::from_min_size(
                 Pos2::new(left_rect.right() + gap, area.min.y),
                 Vec2::new(strip_w, pane_h),
             );
             let right_rect = Rect::from_min_size(
                 Pos2::new(strip_rect.right() + gap, area.min.y),
-                Vec2::new(pane_w, pane_h),
+                Vec2::new(comment_w, pane_h),
             );
             let left_text = Rect::from_min_size(
                 Pos2::new(left_rect.min.x + source_gutter, left_rect.min.y),
-                Vec2::new((pane_w - source_gutter).max(20.0), pane_h),
+                Vec2::new((source_w - source_gutter).max(20.0), pane_h),
             );
             let right_text = Rect::from_min_size(
                 Pos2::new(right_rect.min.x + comment_gutter, right_rect.min.y),
-                Vec2::new((pane_w - comment_gutter).max(20.0), pane_h),
+                Vec2::new((comment_w - comment_gutter).max(20.0), pane_h),
             );
-
-            let mut target_left = self.left_offset;
-            let mut target_right = self.right_offset;
-            let mut applied_sync = false;
-            if self.scroll_from == 1 {
-                target_right = map_scroll(
-                    self.left_offset,
-                    true,
-                    &self.blocks,
-                    source_row_h,
-                    comment_row_h,
-                    pane_h,
-                );
-                self.scroll_from = 0;
-                applied_sync = true;
-            } else if self.scroll_from == 2 {
-                target_left = map_scroll(
-                    self.right_offset,
-                    false,
-                    &self.blocks,
-                    comment_row_h,
-                    source_row_h,
-                    pane_h,
-                );
-                self.scroll_from = 0;
-                applied_sync = true;
-            }
 
             let blocks = self.blocks.clone();
             let selected = self.selected;
@@ -752,6 +813,40 @@ impl eframe::App for App {
             let syntax_palette = highlight::Palette::new(dark, &self.config.syntax_theme);
             let language = self.active_language();
             let plain_color = ui.visuals().widgets.inactive.text_color();
+            let source_layout = LineLayout::uniform(source_lines.len(), source_row_h);
+            let wrap_comments = self.config.comment_wrap;
+            let comment_wrap_w =
+                (right_text.width() - ui.spacing().scroll.allocated_width()).max(40.0);
+            let comment_layout = if wrap_comments {
+                let job = egui::text::LayoutJob::simple(
+                    comments_display.clone(),
+                    comment_font.clone(),
+                    plain_color,
+                    comment_wrap_w,
+                );
+                let galley = ui.fonts(|fonts| fonts.layout_job(job));
+                LineLayout::from_galley(&galley, comment_lines.len(), comment_row_h)
+            } else {
+                LineLayout::uniform(comment_lines.len(), comment_row_h)
+            };
+
+            let mut target_left = self.left_offset;
+            let mut target_right = self.right_offset;
+            let mut applied_sync = false;
+            if self.scroll_from == 1 {
+                let center = self.left_offset / source_row_h + (pane_h / source_row_h) * 0.5;
+                let target_line = map_line(center, true, &self.blocks);
+                target_right = (comment_layout.top(target_line) - pane_h * 0.5).max(0.0);
+                self.scroll_from = 0;
+                applied_sync = true;
+            } else if self.scroll_from == 2 {
+                let center = comment_layout.line_position(self.right_offset + pane_h * 0.5);
+                let target_line = map_line(center, false, &self.blocks);
+                target_left = (target_line * source_row_h - pane_h * 0.5).max(0.0);
+                self.scroll_from = 0;
+                applied_sync = true;
+            }
+
             let strip_response = ui.allocate_rect(strip_rect, egui::Sense::click());
 
             paint_pane(
@@ -762,7 +857,7 @@ impl eframe::App for App {
                 &blocks,
                 selected,
                 target_left,
-                source_row_h,
+                &source_layout,
                 &source_font,
                 true,
                 self.config.show_line_numbers,
@@ -775,7 +870,7 @@ impl eframe::App for App {
                 &blocks,
                 selected,
                 target_right,
-                comment_row_h,
+                &comment_layout,
                 &comment_font,
                 false,
                 self.config.show_line_numbers,
@@ -789,8 +884,8 @@ impl eframe::App for App {
                 selected,
                 target_left,
                 target_right,
-                source_row_h,
-                comment_row_h,
+                &source_layout,
+                &comment_layout,
             );
 
             let mut left_response = None;
@@ -841,7 +936,11 @@ impl eframe::App for App {
                         string.to_owned(),
                         comment_font.clone(),
                         plain_color,
-                        f32::INFINITY,
+                        if wrap_comments {
+                            comment_wrap_w
+                        } else {
+                            f32::INFINITY
+                        },
                     );
                     layouter_ui.fonts(|fonts| fonts.layout_job(job))
                 };
@@ -853,11 +952,22 @@ impl eframe::App for App {
                 None,
             );
             right_child.set_clip_rect(right_text);
-            let right_output = egui::ScrollArea::both()
+            let right_area = if wrap_comments {
+                egui::ScrollArea::vertical().scroll_bar_visibility(
+                    egui::containers::scroll_area::ScrollBarVisibility::AlwaysVisible,
+                )
+            } else {
+                egui::ScrollArea::both()
+            };
+            let right_output = right_area
                 .vertical_scroll_offset(target_right)
                 .show(&mut right_child, |ui| {
                     let editor = egui::TextEdit::multiline(&mut comments_edit)
-                        .desired_width(f32::INFINITY)
+                        .desired_width(if wrap_comments {
+                            comment_wrap_w
+                        } else {
+                            f32::INFINITY
+                        })
                         .frame(false)
                         .margin(Vec2::ZERO)
                         .font(comment_font.clone())
@@ -872,7 +982,7 @@ impl eframe::App for App {
                 if response.clicked() {
                     if let Some(point) = response.interact_pointer_pos() {
                         let line =
-                            ((point.y - left_text.min.y + new_left) / source_row_h) as usize;
+                            source_layout.line_at(point.y - left_text.min.y + new_left);
                         self.selected = blocks.iter().position(|block| {
                             line >= block.src_start && line <= block.src_end
                         });
@@ -883,7 +993,7 @@ impl eframe::App for App {
                 if response.clicked() {
                     if let Some(point) = response.interact_pointer_pos() {
                         let line =
-                            ((point.y - right_text.min.y + new_right) / comment_row_h) as usize;
+                            comment_layout.line_at(point.y - right_text.min.y + new_right);
                         self.selected = blocks.iter().position(|block| {
                             line >= block.cmt_start && line <= block.cmt_end
                         });
@@ -896,10 +1006,10 @@ impl eframe::App for App {
                     let mut best_distance = f32::MAX;
                     for (index, block) in blocks.iter().enumerate() {
                         let left_y = left_text.min.y
-                            + (block.src_start + block.src_end) as f32 * 0.5 * source_row_h
+                            + source_layout.top((block.src_start + block.src_end) as f32 * 0.5)
                             - new_left;
                         let right_y = right_text.min.y
-                            + (block.cmt_start + block.cmt_end) as f32 * 0.5 * comment_row_h
+                            + comment_layout.top((block.cmt_start + block.cmt_end) as f32 * 0.5)
                             - new_right;
                         let distance = (point.y - (left_y + right_y) * 0.5).abs();
                         if distance < best_distance {

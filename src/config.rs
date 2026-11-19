@@ -30,6 +30,8 @@ pub struct AppConfig {
     pub remember_last_file: bool,
     #[serde(default = "default_show_line_numbers")]
     pub show_line_numbers: bool,
+    #[serde(default)]
+    pub comment_wrap: bool,
     #[serde(default = "default_space_lines")]
     pub space_lines: usize,
     #[serde(default = "default_source_font_size")]
@@ -94,6 +96,7 @@ impl Default for AppConfig {
             last_file: None,
             remember_last_file: default_remember_last_file(),
             show_line_numbers: default_show_line_numbers(),
+            comment_wrap: false,
             space_lines: default_space_lines(),
             source_font_size: default_source_font_size(),
             comment_font_size: default_comment_font_size(),

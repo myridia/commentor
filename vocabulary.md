@@ -26,14 +26,14 @@ Shared names for the parts of the commentor GUI and the code behind them. Use th
 | **Menu bar** | The classic top panel with the `File`, `View`, `Settings` and `Help` menus. | `update`, `TopBottomPanel::top("menu_bar")` |
 | **Status bar** | The bottom panel that shows the last action or error, e.g. `opened …`, `saved …`, `settings saved`. | `update`, `TopBottomPanel::bottom("status_bar")` |
 | **Workspace** | The central area between the two bars that holds the panes and the link strip. | `update`, `CentralPanel` |
-| **Source pane** | The left, read-only pane. It shows the source file and is syntax-highlighted. | `left_rect`, `left_text`, `"source_pane"` |
-| **Comment pane** | The right, editable pane. It shows the marker-free view of the `.cmt` file. | `right_rect`, `right_text`, `"comment_pane"` |
+| **Source pane** | The left, read-only pane. It shows the source file, is syntax-highlighted, and receives 58% of the workspace width. | `left_rect`, `left_text`, `"source_pane"` |
+| **Comment pane** | The right, editable pane. It shows the marker-free view of the `.cmt` file and can wrap long lines when the wrap setting is on. | `right_rect`, `right_text`, `"comment_pane"` |
 | **Pane gutter** | The narrow vertical strip at the left edge of each pane, behind the line numbers. Its background is `faint_bg_color`. | `paint_pane`, `gutter_width` |
 | **Line-number column** | The digits painted inside the gutter, one per physical line. Can be hidden in Settings. | `paint_pane`, `show_line_numbers` |
 | **Text area** | The part of a pane to the right of the gutter where the `TextEdit` lives. | `left_text`, `right_text` |
 | **Tint band** | The translucent coloured rectangle behind one block. Internally called the block band. It starts at the text edge, extends 2 px above the first row and 2 px below the last row, ends 4 px before the pane's right edge, and has a 3 px corner radius. | `paint_pane`, `link_tint_color` |
 | **Selection** | The block chosen by a click or by `View → Next/Previous Link`. Its tint is stronger and its curves are thicker and brighter. | `selected`, `link_stroke_color`, `link_tint_color` |
-| **Link strip** | The 44 px column between the two panes that carries the curves. | `strip_rect`, `paint_links` |
+| **Link strip** | The 24 px column between the two panes that carries the curves, separated from each pane by a 4 px gap. | `strip_rect`, `paint_links` |
 | **Link curve** | A cubic bezier joining the first (or last) row of a source range to the first (or last) row of its comment range. Two curves per block. | `paint_links`, `CubicBezierShape` |
 | **Balloon tail** | The small filled triangle at each end of a link curve, pointing into the pane like a speech-balloon tail. | `paint_links`, `tail` |
 | **Range band** | The faint four-cornered fill between the two link curves, showing the whole binding. | `paint_links`, `convex_polygon` |
@@ -54,11 +54,13 @@ Shared names for the parts of the commentor GUI and the code behind them. Use th
 | **Display comments** | The marker-free view shown in the comment pane. Marker lines become empty lines, so physical line numbers stay aligned. | `hide_markers` |
 | **Separator lines** | The visible blank lines between comment sections. Controlled by **Space lines** (default 2, clamped 1–8). They stay untinted. | `normalize_spacing`, `space_lines` |
 | **Row height** | The pixel height of one text line for a pane's font. Each pane has its own; it converts between line numbers and y coordinates. | `source_row_h`, `comment_row_h` |
+| **Line layout** | The per-pane map from logical line numbers to y offsets. It is uniform when the pane does not wrap, and built from the wrapped galley for the comment pane. It is what keeps gutter numbers, tint bands, clicks and scroll sync aligned. | `LineLayout`, `top`, `line_at`, `line_position` |
 | **Gutter width** | The pane-gutter width in pixels, derived from the number of digits in the largest line number plus 4 px left pad and 6 px breathing room (minimum 18 px). | `gutter_width` |
 | **Scroll offset** | The vertical scroll position of one pane, in pixels. | `App::left_offset`, `App::right_offset` |
 | **Scroll sync** | Mapping the centre of the pane being scrolled through its bindings into the other pane's line space. `scroll_from` (1 = source, 2 = comments) marks who drove the last move. | `map_line`, `map_scroll`, `App::scroll_from` |
 | **Selected block** | The block currently highlighted, stored as an index into `App::blocks`. | `App::selected`, `select_relative` |
 | **Settings** | The persistent `AppConfig` values, saved to `~/.commentor/config.toml`. | `config.rs` |
+| **Wrap comment text** | The setting that lets the comment pane wrap long lines. The source pane never wraps. Wrapped rows still share one logical line number. | `AppConfig::comment_wrap`, `comment_wrap_w` |
 | **Theme** | `Dark` or `Light`, applied to egui visuals. | `AppConfig::theme`, `apply_theme` |
 | **Colour scheme / accent** | The accent used for selection, links and hover states: Blue, Green, Purple, Warm, Pink or Neutral. It is not the per-block tint palette. | `AppConfig::color_scheme`, `scheme_accent` |
 | **Syntax palette** | The keyword/string/comment/number/function/type/macro colours used by the highlighter: Default, Vivid or Soft. | `highlight::Palette`, `AppConfig::syntax_theme` |

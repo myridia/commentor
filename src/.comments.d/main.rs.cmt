@@ -16,50 +16,53 @@ apply_theme rebuilds egui visuals from dark or light defaults, then overrides th
 @151-166
 All app state in one struct: source and comment text, both paths, status line, parsed blocks, selected link, scroll offsets, the one-frame scroll source flag, and the TOML settings.
 
-@168-239
-paint_pane draws one pane below its TextEdit: background, one rounded and padded coloured band per linked block, a gutter, and line numbers for the visible lines when the setting is on. On the comment side the band stops before trailing blank lines, so the empty lines between sections stay untinted and clearly separate the blocks while the gutter keeps counting them. Each pane may use a different font and row height.
+@169-244
+LineLayout maps logical line numbers to y offsets. uniform gives one fixed row per line for the source pane. from_galley walks the wrapped galley rows and records the top of each logical line, so a wrapped comment line still gets one number and one tint hit. top interpolates inside a line, line_at converts a click position back to a logical line, and line_position keeps a fractional row for scroll sync.
 
-@241-322
-paint_links draws two cubic bezier curves per block in the 44 pixel middle strip, one for the first line and one for the last line. Each curve ends in a small filled triangle that points into the pane like a comic speech balloon tail. A faint inset band between the curves shows the whole range, and selection brightens and thickens everything. The two panes can have different row heights.
+@245-319
+paint_pane draws one pane below its TextEdit: background, one rounded and padded coloured band per linked block, a gutter, and line numbers for the visible lines when the setting is on. On the comment side the band stops before trailing blank lines, so the empty lines between sections stay untinted and clearly separate the blocks while the gutter keeps counting them. Each pane passes its own LineLayout, so wrapped comment rows line up with their numbers and bands.
 
-@324-370
+@321-402
+paint_links draws two cubic bezier curves per block in the 24 pixel middle strip, one for the first line and one for the last line. Each curve ends in a small filled triangle that points into the pane like a comic speech balloon tail. A faint inset band between the curves shows the whole range, and selection brightens and thickens everything. Curve ends use each pane's LineLayout, so wrapped comment ranges still connect correctly.
+
+@404-450
 open reads a source file, derives the .cmt path beside it, reads or starts an empty comment file, normalizes the section spacing, and remembers the source path. save writes only the comment file. refresh reparses blocks and drops a selection that no longer exists.
 
-@371-443
+@451-523
 Settings persistence and helpers: remember_last_file writes the current source path into config.toml; save_settings writes the whole config; set_space_lines re-normalizes the comment file; set_source_font and set_comment_font clamp the font sizes; active_language resolves the auto-detected or overridden language; select_relative wraps through the links.
 
-@444-453
+@524-533
 open_target is the platform shim used by the Help and Settings menus for URLs and for the config file path: cmd /C start on Windows, open on macOS, xdg-open elsewhere.
 
-@455-461
+@535-541
 The update loop applies the theme, then still handles Ctrl+S by saving the comment pane.
 
-@463-680
-A classic top menu in a TopBottomPanel, built with egui::menu::bar and menu_button like ct. File opens/saves/exits; View moves between links and resets scroll; Settings toggles preferences and exposes theme, accent colours, syntax highlighting, language, highlight palette, space lines and both font sizes; Help opens the project page and shows About.
+@543-766
+A classic top menu in a TopBottomPanel, built with egui::menu::bar and menu_button like ct. File opens/saves/exits; View moves between links and resets scroll; Settings toggles preferences and exposes theme, accent colours, syntax highlighting, language, highlight palette, space lines, line numbers, comment wrapping and both font sizes; Help opens the project page and shows About.
 
-@681-684
+@767-770
 The status line lives in a bottom TopBottomPanel, so the central panel is reserved for the two panes.
 
-@685-756
-Layout maths: two equal panes, a 44 pixel link strip with room for the bezier tails, 6 pixel gaps, and a gutter inside each pane that is sized from the widest line number plus a small pad. Scroll handoff maps the centre of one pane through the linked ranges into the other using each pane's own row height.
+@771-851
+Central layout: the source pane takes 58 percent of the available width and the comment pane the rest, a 24 pixel link strip with 4 pixel gaps sits between them, and each pane has a gutter sized from its widest line number plus a small pad. A LineLayout is built for each pane; the comment one is measured from a wrapped galley when Wrap comment text is on and is uniform otherwise. Scroll handoff maps the centre of one pane through the linked ranges into the other: source centres become a wrapped comment offset through the layout, and comment centres use line_position before mapping back.
 
-@757-795
+@852-890
 Both panes and the link strip are painted before the text widgets are added, so the bands stay behind the text. The source pane is read-only but selectable; the comment pane is editable.
 
-@796-866
-Two ScrollAreas use their own font and row height. Each pane lives in a child UI with a distinct id source ("source_pane" / "comment_pane"), so egui does not report duplicate widget ids, and each child is clipped to its own text rect so long lines cannot bleed into the other pane. The editor is added left-aligned rather than with add_sized, which would centre oversized text and push it left over the source pane. The source editor always uses a layouter: it runs the highlighter when highlighting is enabled, otherwise it builds plain text. The comment editor uses a simple no-wrap layouter and shows the marker-free view of the .cmt file. Neither pane wraps, so every galley row stays on its physical line.
+@891-976
+Two ScrollAreas use their own font and line layout. The source pane always scrolls in both directions and never wraps. The comment pane uses a vertical-only ScrollArea with an always-visible bar when Wrap comment text is on, and a two-axis no-wrap area otherwise. Each pane lives in a child UI with a distinct id source ("source_pane" / "comment_pane"), so egui does not report duplicate widget ids, and each child is clipped to its own text rect so long lines cannot bleed into the other pane. The editor is added left-aligned rather than with add_sized, which would centre oversized text and push it left over the source pane. The source editor always uses a layouter: it runs the highlighter when highlighting is enabled, otherwise it builds plain text. The comment editor uses a simple layouter that wraps at the measured comment width when wrapping is on, and shows the marker-free view of the .cmt file.
 
-@868-913
-Click selection: a click on a source line, a comment line or a curve sets the selected block, using the row height of that pane. Clicking the strip picks the nearest curve by vertical distance.
+@978-1023
+Click selection: a click on a source line, a comment line or a curve sets the selected block. Each pane uses its own LineLayout to turn a click y into a logical line, so clicks on a wrapped row still select the right block. Clicking the strip picks the nearest curve by vertical distance.
 
-@914-925
+@1024-1035
 Scroll detection compares the new offsets with the previous frame. applied_sync suppresses the echo from a scroll we caused ourselves.
 
-@926-933
+@1036-1043
 Any edit to the visible comment text is mapped back into the canonical file with restore_markers, then triggers a reparse so new markers and changed ranges appear in the same frame.
 
-@934-961
+@1044-1071
 Entry point. The window is 1100 by 760; settings are loaded first, then a command-line path is opened, otherwise the remembered last file if that setting is enabled.
 
-@963-967
+@1073-1077
 Gutter width helper: the digit count comes from the line total, the digit width from the active monospace font, and the result adds 4 pixels of left pad and 6 pixels of breathing room before the text, never below 18.
