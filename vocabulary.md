@@ -33,7 +33,7 @@ Shared names for the parts of the commentor GUI and the code behind them. Use th
 | **Pane gutter** | The narrow vertical strip at the left edge of each pane, behind the line numbers. Its background is `faint_bg_color`. | `paint_pane_background`, `gutter_width` |
 | **Line-number column** | The digits painted inside the gutter, one per physical line. Can be hidden in Settings. | `paint_line_numbers`, `show_line_numbers` |
 | **Text area** | The part of a pane to the right of the gutter where the `TextEdit` lives. | `left_text`, `right_text` |
-| **Tint band** | The translucent coloured rectangle behind one block. Internally called the block band. It starts at the text edge, extends 2 px above the first row and 2 px below the last row, ends 4 px before the pane's right edge, and has a 3 px corner radius. | `paint_scrolled_layers`, `link_tint_color` |
+| **Tint band** | The translucent coloured rectangle behind one block. Internally called the block band. It starts at the text edge, extends 2 px above the first row and 2 px below the last row, ends 4 px before the pane's right edge, and has a 3 px corner radius. Hidden when **Show link block colors** is off. | `paint_scrolled_layers`, `link_tint_color` |
 | **Selection** | The block chosen by a click or by `View → Next/Previous Link`. Its tint is stronger and its curves are thicker and brighter. | `selected`, `link_stroke_color`, `link_tint_color` |
 | **Link strip** | The 24 px column between the two panes that carries the curves, separated from each pane by a 4 px gap. | `strip_rect`, `paint_links` |
 | **Link curve** | A cubic bezier joining the first (or last) row of a source range to the first (or last) row of its comment range. Two curves per block. | `paint_links`, `CubicBezierShape` |
@@ -63,6 +63,7 @@ Shared names for the parts of the commentor GUI and the code behind them. Use th
 | **Selected block** | The block currently highlighted, stored as an index into `App::blocks`. | `App::selected`, `select_relative` |
 | **Settings** | The persistent `AppConfig` values, saved to `~/.commentor/config.toml`. | `config.rs` |
 | **Wrap comment text** | The setting that lets the comment pane wrap long lines. The source pane never wraps. Wrapped rows still share one logical line number. | `AppConfig::comment_wrap`, `comment_wrap_w` |
+| **Show link block colors** | The setting that hides the filled tint bands and the strip's filled range while keeping the curves, tails and selection. | `AppConfig::show_link_colors`, `paint_scrolled_layers`, `paint_links` |
 | **Theme** | `Dark` or `Light`, applied to egui visuals. | `AppConfig::theme`, `apply_theme` |
 | **Colour scheme / accent** | The accent used for selection, links and hover states: Blue, Green, Purple, Warm, Pink or Neutral. It is not the per-block tint palette. | `AppConfig::color_scheme`, `scheme_accent` |
 | **Syntax palette** | The keyword/string/comment/number/function/type/macro colours used by the highlighter: Default, Vivid or Soft. | `highlight::Palette`, `AppConfig::syntax_theme` |

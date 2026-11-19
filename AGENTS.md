@@ -13,7 +13,7 @@ Commentor shows comments that are stored outside source files. A source file `fo
 - `src/lib.rs` — file pairing, marker parsing, block mapping, scroll mapping, marker hiding/restoring and comment spacing
 - `src/main.rs` — eframe app, classic top menu, themes, painting, panes, link strip, open/save
 - `src/highlight.rs` — lightweight syntax highlighter for the source pane (language detection + token palettes), used through `TextEdit::layouter`
-- `src/config.rs` — `AppConfig` (`last_file`, `remember_last_file`, `show_line_numbers`, `comment_wrap`, `space_lines`, font sizes, theme/colour scheme, highlighting) + TOML load/save
+- `src/config.rs` — `AppConfig` (`last_file`, `remember_last_file`, `show_line_numbers`, `comment_wrap`, `show_link_colors`, `space_lines`, font sizes, theme/colour scheme, highlighting) + TOML load/save
 - `example/hello.rs` + `example/.comments.d/hello.rs.cmt` — simple standalone example used for testing
 - `src/.comments.d/*.cmt` — comments on commentor's own source; kept as samples, not used by the example task
 - `vocabulary.md` — shared names for the GUI parts (panes, gutter, tint band, link strip) and program parts (blocks, markers, bindings, settings); use its terms when discussing changes
@@ -57,7 +57,7 @@ A classic top menu in a `TopBottomPanel`, built with `egui::menu::bar` + `ui.men
 - **File** — Open Source..., Save Comments, Exit
 - **Edit** — Undo, Redo, Cut, Copy, Paste, Select All, Delete; the same commands are on each pane's right-click menu. Keyboard shortcuts work directly in the focused `TextEdit`. Copy and Select All also work in the read-only source pane; the other Edit actions are disabled there.
 - **View** — Next Link, Previous Link, Reset Scroll
-- **Settings** — Remember last file, Show line numbers, Theme (dark/light), Colors (blue/green/purple/warm/pink/neutral), Syntax highlighting, Language (auto plus 14 languages), Highlight palette (default/vivid/soft), Space lines, Source font, Comment font, Open Settings File, Save Settings Now
+- **Settings** — Remember last file, Show line numbers, Wrap comment text, Show link block colors, Theme (dark/light), Colors (blue/green/purple/warm/pink/neutral), Syntax highlighting, Language (auto plus 14 languages), Highlight palette (default/vivid/soft), Space lines, Source font, Comment font, Open Settings File, Save Settings Now
 - **Help** — Project Page, About
 
 `Ctrl+S` still saves the comment file. The status line lives in a bottom `TopBottomPanel`.

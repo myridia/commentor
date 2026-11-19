@@ -32,6 +32,8 @@ pub struct AppConfig {
     pub show_line_numbers: bool,
     #[serde(default)]
     pub comment_wrap: bool,
+    #[serde(default = "default_show_link_colors")]
+    pub show_link_colors: bool,
     #[serde(default = "default_space_lines")]
     pub space_lines: usize,
     #[serde(default = "default_source_font_size")]
@@ -55,6 +57,10 @@ fn default_remember_last_file() -> bool {
 }
 
 fn default_show_line_numbers() -> bool {
+    true
+}
+
+fn default_show_link_colors() -> bool {
     true
 }
 
@@ -97,6 +103,7 @@ impl Default for AppConfig {
             remember_last_file: default_remember_last_file(),
             show_line_numbers: default_show_line_numbers(),
             comment_wrap: false,
+            show_link_colors: default_show_link_colors(),
             space_lines: default_space_lines(),
             source_font_size: default_source_font_size(),
             comment_font_size: default_comment_font_size(),

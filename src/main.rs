@@ -380,33 +380,39 @@ fn paint_scrolled_layers(
     selected: Option<usize>,
     layout: &LineLayout,
     source_side: bool,
+    show_colors: bool,
 ) {
     let painter = ui.painter();
 
-    for (index, block) in blocks.iter().enumerate() {
-        let (start, end) = if source_side {
-            (block.src_start, block.src_end)
-        } else {
-            let mut end = block.cmt_end;
-            while end > block.cmt_start
-                && lines
-                    .get(end - 1)
-                    .is_some_and(|line| line.trim().is_empty())
-            {
-                end -= 1;
-            }
-            (block.cmt_start, end)
-        };
-        let y0 = content_top + layout.top(start as f32);
-        let y1 = content_top + layout.top(end as f32);
-        let top = y0 - 2.0;
-        let bottom = (y1 + 2.0).max(top + 1.0);
-        let color = link_tint_color(index, selected == Some(index));
-        painter.rect_filled(
-            Rect::from_min_max(Pos2::new(text_left, top), Pos2::new(text_right - 4.0, bottom)),
-            3.0,
-            color,
-        );
+    if show_colors {
+        for (index, block) in blocks.iter().enumerate() {
+            let (start, end) = if source_side {
+                (block.src_start, block.src_end)
+            } else {
+                let mut end = block.cmt_end;
+                while end > block.cmt_start
+                    && lines
+                        .get(end - 1)
+                        .is_some_and(|line| line.trim().is_empty())
+                {
+                    end -= 1;
+                }
+                (block.cmt_start, end)
+            };
+            let y0 = content_top + layout.top(start as f32);
+            let y1 = content_top + layout.top(end as f32);
+            let top = y0 - 2.0;
+            let bottom = (y1 + 2.0).max(top + 1.0);
+            let color = link_tint_color(index, selected == Some(index));
+            painter.rect_filled(
+                Rect::from_min_max(
+                    Pos2::new(text_left, top),
+                    Pos2::new(text_right - 4.0, bottom),
+                ),
+                3.0,
+                color,
+            );
+        }
     }
 }
 
@@ -473,6 +479,7 @@ fn paint_links(
     right_offset: f32,
     left_layout: &LineLayout,
     right_layout: &LineLayout,
+    show_colors: bool,
 ) {
     let x0 = left.max.x;
     let x1 = right.min.x;
@@ -497,16 +504,18 @@ fn paint_links(
         let color = link_stroke_color(index, is_selected);
         let width = if is_selected { 2.4 } else { 1.5 };
 
-        painter.add(egui::Shape::convex_polygon(
-            vec![
-                Pos2::new(x0 + 2.0, left_y0),
-                Pos2::new(x0 + 2.0, left_y1),
-                Pos2::new(x1 - 2.0, right_y1),
-                Pos2::new(x1 - 2.0, right_y0),
-            ],
-            link_tint_color(index, false),
-            Stroke::NONE,
-        ));
+        if show_colors {
+            painter.add(egui::Shape::convex_polygon(
+                vec![
+                    Pos2::new(x0 + 2.0, left_y0),
+                    Pos2::new(x0 + 2.0, left_y1),
+                    Pos2::new(x1 - 2.0, right_y1),
+                    Pos2::new(x1 - 2.0, right_y0),
+                ],
+                link_tint_color(index, false),
+                Stroke::NONE,
+            ));
+        }
 
         for &(from_y, to_y) in &[(left_y0, right_y0), (left_y1, right_y1)] {
             painter.add(CubicBezierShape {
@@ -806,6 +815,15 @@ impl eframe::App for App {
                     {
                         self.save_settings();
                     }
+                    if ui
+                        .checkbox(
+                            &mut self.config.show_link_colors,
+                            "Show link block colors",
+                        )
+                        .changed()
+                    {
+                        self.save_settings();
+                    }
                     ui.separator();
                     ui.horizontal(|ui| {
                         ui.label("Theme:");
@@ -1021,6 +1039,7 @@ impl eframe::App for App {
             let syntax_palette = highlight::Palette::new(dark, &self.config.syntax_theme);
             let language = self.active_language();
             let plain_color = ui.visuals().widgets.inactive.text_color();
+            let show_link_colors = self.config.show_link_colors;
             let (source_galley, source_layout) = {
                 let mut job = if self.config.highlight {
                     highlight::layout_job(
@@ -1146,6 +1165,7 @@ impl eframe::App for App {
                         selected,
                         &source_layout,
                         true,
+                        show_link_colors,
                     );
                     let editor = egui::TextEdit::multiline(&mut source_view)
                         .id(source_editor_id())
@@ -1199,6 +1219,7 @@ impl eframe::App for App {
                         selected,
                         &comment_layout,
                         false,
+                        show_link_colors,
                     );
                     let editor = egui::TextEdit::multiline(&mut comments_edit)
                         .id(comment_editor_id())
@@ -1228,6 +1249,7 @@ impl eframe::App for App {
                 new_right,
                 &source_layout,
                 &comment_layout,
+                show_link_colors,
             );
 
             if let Some(response) = &left_response {
