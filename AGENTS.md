@@ -12,6 +12,7 @@ Commentor shows comments that are stored outside source files. A source file `fo
 ## Structure
 - `src/lib.rs` — file pairing, marker parsing, block mapping, scroll mapping, marker hiding/restoring and comment spacing
 - `src/main.rs` — eframe app, classic top menu, themes, painting, panes, link strip, open/save
+- `src/icon.rs` — hardcoded 32×32 RGBA window icon rasterized from `commentor.svg`, applied through `IconData` + `ViewportBuilder::with_icon` in `main()`
 - `src/highlight.rs` — lightweight syntax highlighter for the source pane (language detection + token palettes), used through `TextEdit::layouter`
 - `src/config.rs` — `AppConfig` (`last_file`, `remember_last_file`, `show_line_numbers`, `comment_wrap`, `show_link_colors`, `space_lines`, font sizes, theme/colour scheme, highlighting) + TOML load/save
 - `example/hello.rs` + `example/.comments.d/hello.rs.cmt` — simple standalone example used for testing

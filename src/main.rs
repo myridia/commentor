@@ -1,5 +1,6 @@
 mod config;
 mod highlight;
+mod icon;
 
 use commentor::{
     hide_markers, map_line, normalize_spacing, pair_path, parse_blocks, restore_markers, Block,
@@ -7,7 +8,7 @@ use commentor::{
 use config::AppConfig;
 use eframe::egui;
 use egui::epaint::CubicBezierShape;
-use egui::{Align2, Color32, FontId, Pos2, Rect, Stroke, Vec2};
+use egui::{Align2, Color32, FontId, IconData, Pos2, Rect, Stroke, Vec2};
 use rfd::FileDialog;
 use std::fs;
 use std::path::PathBuf;
@@ -1336,8 +1337,15 @@ impl eframe::App for App {
 }
 
 fn main() -> Result<(), eframe::Error> {
+    let icon_data = IconData {
+        rgba: icon::get_icon(),
+        width: 32,
+        height: 32,
+    };
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size(Vec2::new(1100.0, 760.0)),
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size(Vec2::new(1100.0, 760.0))
+            .with_icon(icon_data),
         ..Default::default()
     };
     eframe::run_native(
