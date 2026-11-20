@@ -1,0 +1,13 @@
+[package]
+name = "commentor"
+version = "0.1.0"
+edition = "2024"
+authors = ["veto"]
+license = "GPL-3.0"
+
+[dependencies]
+eframe = { version = "0.28.1", features = ["wgpu"] }
+rfd = "0.14.1"
+homedir = "*"
+serde = { version = "*", features = ["derive"] }
+toml = "*"
