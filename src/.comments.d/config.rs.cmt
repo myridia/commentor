@@ -1,0 +1,26 @@
+@1-5
+Imports: homedir finds the user's home directory; serde derives TOML (de)serialization; fs/io/PathBuf handle the config file itself.
+
+@7-23
+ConfigError wraps the two things that can go wrong: filesystem access and an invalid TOML file. The From impls let the rest of the module use the ? operator.
+
+@25-53
+AppConfig holds the settings saved between runs: the last source file, whether to reopen it, line numbers, comment wrapping, link block colors, blank lines between comment sections, separate source/comment font sizes, dark or light theme, accent colour scheme, syntax highlighting, the language override and the highlight palette. Missing fields in an old config fall back to the defaults.
+
+@55-97
+Each default is a small function so serde can use them when a field is absent: remembering the last file, line numbers on, comment wrapping off, link block colors on, two space lines, both fonts at 13, dark theme, blue accents, highlighting on, auto language and the default palette.
+
+@99-117
+The Default impl mirrors the serde defaults so a fresh config and an old config with missing fields produce the same values.
+
+@119-135
+get_config loads the config or initializes it on first run. If anything fails, it prints the reason and falls back to defaults so the GUI can still start.
+
+@137-145
+save_config writes pretty TOML to ~/.commentor/config.toml, creating the parent directory first.
+
+@147-155
+config_path resolves the home directory and returns ~/.commentor/config.toml. Keeping commentor's settings in their own folder avoids colliding with couchy's config.toml.
+
+@157-168
+load_or_initialize parses an existing config file; when none exists it writes a default one immediately so the settings file is there from the first launch.

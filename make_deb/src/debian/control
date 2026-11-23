@@ -1,0 +1,30 @@
+Source: commentor
+Section: utils
+Priority: optional
+Maintainer: veto <info@myridia.com>
+Rules-Requires-Root: no
+Build-Depends:
+ debhelper-compat (= 13),
+ pkg-config,
+ libgtk-3-dev,
+ libxkbcommon-dev,
+ libxcb-render0-dev,
+ libxcb-shape0-dev,
+ libxcb-xfixes0-dev,
+ libssl-dev,
+ libclang-dev,
+Standards-Version: 4.7.2
+Homepage: https://github.com/veto8/commentor
+
+Package: commentor
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+Description: Viewer for comments stored beside source files
+ Commentor shows comments stored outside source files and links them to
+ the source lines they describe. The GUI pairs each source file with a
+ .comments.d/<file>.cmt file, highlights bindings between source lines
+ and comment blocks, and saves the edited comments back to disk.
+ .
+ This package contains the commentor GUI application.
