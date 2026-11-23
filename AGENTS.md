@@ -19,7 +19,7 @@ Commentor shows comments that are stored outside source files. A source file `fo
 - `src/.comments.d/*.cmt` — comments on commentor's own source; kept as samples, not used by the example task
 - `vocabulary.md` — shared names for the GUI parts (panes, gutter, tint band, link strip) and program parts (blocks, markers, bindings, settings); use its terms when discussing changes
 - `ask.sh` / `ask.d/` — task menu; each task is a script with `# id:`, `# group:` and `# desc:` headers
-- `.github/workflows/` — release pipelines copied from couchy (Linux/Windows, macOS Intel + Silicon, FreeBSD)
+- `.github/workflows/` — build pipelines copied from couchy (Linux, Debian, Windows, macOS Intel + Silicon, FreeBSD, MSIX, Pages)
 - `commentor.svg` — README logo
 - GPL-3.0, repo `github/commentor`
 
@@ -63,14 +63,19 @@ A classic top menu in a `TopBottomPanel`, built with `egui::menu::bar` + `ui.men
 
 `Ctrl+S` still saves the comment file. The status line lives in a bottom `TopBottomPanel`.
 
-## CI / releases
-Three workflows under `.github/workflows/`, adapted from couchy. All trigger on pushes to `main`, any tag, and `workflow_dispatch`; all build jobs are gated by `if: github.repository_owner == 'myridia'`.
+## Workflows
+- `.github/workflows/control.yml` is the single entry point, copied from couchy. It runs on pushes to `main`, any tag, and `workflow_dispatch`; the `jobs:` block is a one-line-per-build list (comment out a line with `#` to disable it).
+- Every job is gated by `github.repository_owner == 'myridia'` in `control.yml` only. Leaf workflows are `workflow_call` + `workflow_dispatch`, so they can also be dispatched directly.
+- Leaf workflows: `linux.yml`, `debian.yml`, `windows.yml`, `macos.yml`, `macos_intel.yml`, `freebsd.yml`, `msix.yml`, `pages.yml`.
+- `FreeBSD` adds the target with `rustup target add x86_64-unknown-freebsd` before building.
+- `msix` downloads `commentor.exe` from the `veto8/commentor` `main` release.
+- Uploads use `svenstaro/upload-release-action@v2` with `GITHUB_TOKEN`, `tag: ${{ github.ref }}`, `overwrite: true` and `file_glob: true`.
 
-- `linux_windows_release.yml` — builds `x86_64-unknown-linux-gnu` and `x86_64-pc-windows-gnu`, renames to `commentor_linux` / `commentor_windows.exe`.
-- `macos_release.yml` — `macos-13` builds `x86_64-apple-darwin` → `commentor_macos_intel`; `macos-14` builds `aarch64-apple-darwin` → `commentor_macos_silicon` (couchy's silicon job is mislabeled; fixed here).
-- `freebsd_release.yml` — uses `vmactions/freebsd-vm@v1` on `ubuntu-22.04`, builds `x86_64-unknown-freebsd`, renames to `commentor_freebsd`.
+## Debian packaging
+- `make_deb/src/` — packaging source; `Cargo.toml` and `src` are symlinks to the repo root. `debian/rules` sets `CARGO_TARGET_DIR` to its own `target/`, and `debian/install` copies `target/release/commentor` into `/usr/bin`. The `.deb` lands in `make_deb/` where `debian.yml` expects it. No embedded assets in commentor, so no `pages`/`.cargo` symlinks are needed.
 
-Uploads use `svenstaro/upload-release-action@v2` with `GITHUB_TOKEN`, `tag: ${{ github.ref }}`, `overwrite: true` and `file_glob: true`. Couchy's stale `hello_rust_linux` / `hello_rust_windows.exe` upload steps were intentionally omitted; no workflow is run by the agent.
+## Project page
+- `pages/public/` — GitHub Pages site: `index.html`, `style.css`, `favicon.ico` and `img/` (logo, icon, screenshot). `pages.yml` deploys on dispatch or via `control.yml`.
 
 ## Conventions
 - No comments in code unless asked.

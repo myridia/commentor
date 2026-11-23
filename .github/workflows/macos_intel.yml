@@ -1,0 +1,55 @@
+name: Macos_intel
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: write
+  pull-requests: write 
+  issues: read
+  packages: none
+
+jobs:
+  Build:
+    runs-on: macos-15-intel
+
+    steps:
+      - name: Install Rust
+        run: |
+          brew install tree
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          source $HOME/.cargo/env
+          rustup toolchain install 1.94.1
+          rustup default 1.94.1
+          rustup component add llvm-tools-preview
+          cargo --version 
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compile 
+        run: |
+          source $HOME/.cargo/env
+          cargo build --release  
+      - name: List
+        run: |
+          cd target
+          tree . 
+      - name: Rename
+        run: |
+          cp target/release/commentor commentor_macos_intel.app
+          hdiutil create -volname "commentor_macos" -srcfolder "commentor_macos_intel.app" -ov -format UDZO "commentor_macos_intel.dmg"
+
+
+
+      - name: Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: 'commentor_macos_intel.dmg'
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true 
+
+    
+          

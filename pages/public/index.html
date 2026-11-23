@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>commentor — comments beside your source</title>
+  <meta name="description" content="Commentor is a two-pane desktop viewer for comments stored outside source files, with linked source lines, markers, themes and syntax highlighting.">
+  <link rel="icon" href="favicon.ico">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./">
+      <img src="img/logo.png" alt="" width="36" height="36">
+      <span>commentor</span>
+    </a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#use">How to use</a>
+      <a href="#start">Quick start</a>
+      <a href="https://github.com/veto8/commentor">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <img class="hero-icon" src="img/icon_512x512.png" alt="Commentor icon" width="132" height="132">
+      <div class="hero-copy">
+        <p class="eyebrow">Comments that live outside the source file</p>
+        <h1>commentor</h1>
+        <p class="lead">
+          A two-pane desktop viewer that pairs <code>foo.rs</code> with
+          <code>.comments.d/foo.rs.cmt</code>. Read the source on the left, edit comments on
+          the right, and follow the curves in the link strip between them.
+        </p>
+        <div class="actions">
+          <a class="button primary" href="https://github.com/veto8/commentor/releases/latest">Download latest</a>
+          <a class="button" href="https://github.com/veto8/commentor">View source</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <h2>What it does</h2>
+      <div class="cards">
+        <article>
+          <h3>Two panes, one source</h3>
+          <p>The wider left pane shows the read-only source; the right pane shows the editable comment file. Each source filename maps to <code>.comments.d/&lt;filename&gt;.cmt</code>.</p>
+        </article>
+        <article>
+          <h3>Marker syntax</h3>
+          <p>Blocks start with <code>@N</code> for one line or <code>@N-M</code> for an inclusive range. Line numbers are 1-based; everything up to the next marker belongs to that block.</p>
+        </article>
+        <article>
+          <h3>Link strip</h3>
+          <p>Two bezier curves per binding connect the first and last line of a comment block to its source range. A faint band shows the span; selecting a link brightens it.</p>
+        </article>
+        <article>
+          <h3>Synchronized scrolling</h3>
+          <p>Both panes scroll together through the mapped blocks. Click a highlighted line or a curve, or walk bindings with <strong>Next Link</strong> / <strong>Previous Link</strong>.</p>
+        </article>
+        <article>
+          <h3>Markers stay hidden</h3>
+          <p>The <code>@</code> lines are hidden in the comment pane without changing line numbers, and restored when the file is saved. Separator lines stay untinted so sections read clearly.</p>
+        </article>
+        <article>
+          <h3>Comment wrapping</h3>
+          <p>Wrap long comment lines when you want. Gutter numbers, tint bands, link selection and scroll mapping all keep working in logical line numbers; the source stays unwrapped.</p>
+        </article>
+        <article>
+          <h3>Syntax highlighting</h3>
+          <p>A lightweight highlighter colours keywords, strings, comments, numbers, functions, types and macros. Auto-detects the language from the extension, with 14 languages and three palettes.</p>
+        </article>
+        <article>
+          <h3>Themes &amp; colours</h3>
+          <p>Dark or light theme, accent schemes (blue, green, purple, warm, pink, neutral), configurable fonts, line numbers, link colours and spacing between sections.</p>
+        </article>
+        <article>
+          <h3>Settings that persist</h3>
+          <p>Preferences are saved to <code>~/.commentor/config.toml</code>. The last successfully opened source path is remembered and reopened on startup, unless a path is passed as an argument.</p>
+        </article>
+        <article>
+          <h3>Keyboard &amp; menus</h3>
+          <p>Classic File / Edit / View / Settings / Help menus, right-click editing on each pane, and shortcuts such as <code>Ctrl+S</code> to save comments.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="use">
+      <h2>How to use</h2>
+      <ol class="steps">
+        <li>Open a source file with <strong>File → Open Source...</strong> or pass it as the first argument: <code>cargo run -- path/to/foo.rs</code>.</li>
+        <li>Add a <code>.comments.d/&lt;filename&gt;.cmt</code> file beside it and write blocks starting with <code>@N</code> or <code>@N-M</code>.</li>
+        <li>Edit the right pane; the source pane stays read-only. Use the link strip or <strong>Next / Previous Link</strong> to move between blocks.</li>
+        <li>Save with <strong>File → Save Comments</strong> or <code>Ctrl+S</code>. Markers are preserved.</li>
+      </ol>
+      <p class="hint">Try the bundled example: <code>cargo run -- example/hello.rs</code>.</p>
+    </section>
+
+    <section class="section" id="start">
+      <h2>Quick start</h2>
+      <pre><code>git clone https://github.com/veto8/commentor.git
+cd commentor
+cargo build --release
+cargo run -- example/hello.rs</code></pre>
+      <p>Built with Rust and eframe/egui 0.28.1 (wgpu). No database or async runtime required.</p>
+      <p class="hint">Full details: <a href="https://github.com/veto8/commentor#readme">README.md</a>.</p>
+    </section>
+  </main>
+
+  <footer>
+    commentor · <a href="https://github.com/veto8/commentor">veto8/commentor</a>
+  </footer>
+</body>
+</html>
