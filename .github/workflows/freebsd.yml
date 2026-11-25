@@ -5,7 +5,17 @@ on:
   #   types:
   #     - completed
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (leave empty to skip release)'
+        required: false
+        type: string
   workflow_call:
+    inputs:
+      tag:
+        description: 'Release tag from caller (leave empty to use pushed tag)'
+        required: false
+        type: string
 permissions:
   contents: write
   pull-requests: write 
@@ -42,12 +52,31 @@ jobs:
           #ls target/x86_64-unknown-freebsd/release -all
 
           
+    - name: Resolve release tag
+      id: release
+      shell: bash
+      env:
+        INPUT_TAG: ${{ inputs.tag }}
+      run: |
+        tag="$INPUT_TAG"
+        if [ -z "$tag" ] && [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          tag="${GITHUB_REF#refs/tags/}"
+        fi
+        if [ -z "$tag" ]; then
+          echo "publish=false" >> "$GITHUB_OUTPUT"
+          echo "No release tag (not a tag push and no tag input); skipping release"
+        else
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Upload freeBSD Binary to release
+      if: steps.release.outputs.publish == 'true'
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: target/x86_64-unknown-freebsd/release/commentor_freebsd
-        tag: ${{ github.ref }}
+        tag: ${{ steps.release.outputs.tag }}
         overwrite: true
         file_glob: true
 

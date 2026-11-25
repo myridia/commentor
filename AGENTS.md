@@ -64,12 +64,12 @@ A classic top menu in a `TopBottomPanel`, built with `egui::menu::bar` + `ui.men
 `Ctrl+S` still saves the comment file. The status line lives in a bottom `TopBottomPanel`.
 
 ## Workflows
-- `.github/workflows/control.yml` is the single entry point, copied from couchy. It runs on pushes to `main`, any tag, and `workflow_dispatch`; the `jobs:` block is a one-line-per-build list (comment out a line with `#` to disable it).
-- Every job is gated by `github.repository_owner == 'myridia'` in `control.yml` only. Leaf workflows are `workflow_call` + `workflow_dispatch`, so they can also be dispatched directly.
+- `.github/workflows/control.yml` is the single entry point, copied from couchy. It runs on pushes to `main`, any tag, and `workflow_dispatch`; the `jobs:` block is a one-line-per-build list (comment out a line with `#` to disable it). Its optional `tag` input follows mcclim: use the input, then the pushed tag, then `v0.1.0`.
+- Every job is gated by `github.repository_owner == 'myridia'` in `control.yml` only. Leaf workflows are `workflow_call` + `workflow_dispatch` with an optional `tag` input, so they can also be dispatched directly.
 - Leaf workflows: `linux.yml`, `debian.yml`, `windows.yml`, `macos.yml`, `macos_intel.yml`, `freebsd.yml`, `msix.yml`, `pages.yml`.
 - `FreeBSD` adds the target with `rustup target add x86_64-unknown-freebsd` before building.
 - `msix` downloads `commentor.exe` from the `veto8/commentor` `main` release.
-- Uploads use `svenstaro/upload-release-action@v2` with `GITHUB_TOKEN`, `tag: ${{ github.ref }}`, `overwrite: true` and `file_glob: true`.
+- Uploads use `svenstaro/upload-release-action@v2` with `GITHUB_TOKEN`, `tag: ${{ steps.release.outputs.tag }}`, `overwrite: true` and `file_glob: true`. Each leaf workflow resolves that tag from its `tag` input or the pushed ref; if neither exists, it sets `publish=false` and builds without uploading.
 
 ## Debian packaging
 - `make_deb/src/` — packaging source; `Cargo.toml` and `src` are symlinks to the repo root. `debian/rules` sets `CARGO_TARGET_DIR` to its own `target/`, and `debian/install` copies `target/release/commentor` into `/usr/bin`. The `.deb` lands in `make_deb/` where `debian.yml` expects it. No embedded assets in commentor, so no `pages`/`.cargo` symlinks are needed.
