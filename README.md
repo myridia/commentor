@@ -20,13 +20,23 @@ Comment for lines 88 through 91.
 
 `@N` points at one line, `@N-M` at an inclusive range. Line numbers are 1-based. Every line up to the next marker belongs to that block. Lines that do not start with `@` are free text.
 
+A marker can also carry source anchors:
+
+```text
+@42 [a=fn answer() -> i32 {]
+@88-91 [a=fn pair(value: i32) -> i32 {,b=pair + 1]
+```
+
+`a` stores the trimmed first source line and `b` stores the trimmed last line of a range. Commas, brackets and backslashes inside anchor text are escaped in the marker file. When Commentor opens or reloads a source file, it looks for those lines again. If the numbers have drifted, it opens **Comment alignment review** and asks you to confirm the suggested lines before anything is saved. Saving is blocked while that review is open.
+
 Markers stay in the `.cmt` file, but the right pane hides the `@` lines while keeping their line positions. The example adds blank lines between sections; those separator lines stay untinted, so each comment is visually separated while the gutter still counts every physical line. Edits are mapped back into the file with the markers preserved.
 
 ## Use
 
 - Open a source file with **File → Open Source...** or pass it as the first argument. The last opened file is saved in `~/.commentor/config.toml` and reopened on the next launch; a command-line path wins.
-- Save the comment pane with **File → Save Comments** or `Ctrl+S`.
-- **Tools → Create Comment Files...** opens a folder dialog and creates missing `.cmt` placeholders for `.rs` files under the chosen directory; existing comment files are left alone.
+- If you edit the source elsewhere, use **View → Reload Source**. Commentor rechecks the anchors and opens the alignment review when a block needs attention.
+- Save the comment pane with **File → Save Comments** or `Ctrl+S`. Saving waits until any alignment review is applied or skipped, so a stale marker is not written back accidentally.
+- **Tools → Create Comment Files...** opens a folder dialog, scans the project for file extensions, then lets you pick which extensions get missing `.cmt` placeholders. Each new file starts with a short header explaining the convention and linking to https://commentor.myridia.com/; existing comment files are left alone.
 - Use the usual editing commands in either pane: `Ctrl+C` / `Ctrl+X` / `Ctrl+V` / `Ctrl+A`, plus `Ctrl+Z` / `Ctrl+Y`. The **Edit** menu and the right-click context menu offer the same actions. Copy and Select All also work in the read-only source pane; the other Edit actions are disabled there.
 - Click a highlighted line or a curve to select a link; both panes scroll together through the mapped blocks. **View → Next/Previous Link** walks the bindings.
 - Each code↔comment binding has its own tint in both panes and **two** cubic bezier curves in the strip. Each curve ends in a small filled triangle that points into the pane like a comic speech balloon tail, so the top and bottom of a block are visibly separate. The selected binding is brighter and thicker. Turn off **Settings → Show link block colors** to remove only the filled backgrounds; the pane outlines, curves and tails still show as a single border.
@@ -46,7 +56,7 @@ example/
     └── hello.rs.cmt
 ```
 
-Open `example/hello.rs`; the paired `.cmt` file explains each block of the source. It has long comments, short ones and empty ones, with blank lines between sections so each block is easy to spot in the right pane. This is the file used by the **Run example** task.
+Open `example/hello.rs`; the paired `.cmt` file explains each block of the source. It has long comments, short ones and empty ones, with blank lines between sections so each block is easy to spot in the right pane. Most markers are anchored to unique source lines; the `step_three` marker is deliberately stale so the **Comment alignment review** dialog appears. This is the file used by the **Run example** task.
 
 ```bash
 cargo run -- example/hello.rs

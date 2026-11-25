@@ -1,327 +1,54 @@
-@1-5
-This block covers the first small function and its constants.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
+# Commentor comments for hello.rs
+# This file pairs with the source file under .comments.d/<source>.cmt.
+# Marker: @N or @N-M, optionally followed by [a=start anchor,b=end anchor].
+# Get Commentor: https://commentor.myridia.com/
 
-@6-20
-A short note for a small group of steps.
+@1-4 [a=fn step_one(value: i32) -> i32 {,b=doubled_one + 1]
+The first function is anchored by its signature and its final expression.
+If lines are inserted above it, Commentor finds these same two source lines again.
+The marker number is only the readable address; the anchor is the durable link.
+This block is deliberately long so the right pane has text to scroll through.
+The marker line itself is hidden, while its line position is preserved.
+Colour shows which source lines this text belongs to without showing the marker.
 
-@21-25
 
-@26-50
-This block covers steps early in the file.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
+@6-9 [a=fn step_two(value: i32) -> i32 {,b=doubled_two + 2]
+A short note for the second helper.
+Its anchor names two unique lines, so the link stays precise after edits.
 
-@51-60
+
+@21-24 [a=fn step_three(value: i32) -> i32 {,b=doubled_three + 3]
+This marker is intentionally stale for the demo.
+The anchor points at step_three near line 11, but the number says line 21.
+On open, Commentor should find the irregularity and ask you to review it.
+Choose the suggested lines, tick the block, then Apply selected to fix it.
+Saving is blocked until the review is applied or skipped.
+
+
+@16-19 [a=fn step_four(value: i32) -> i32 {,b=doubled_four + 4]
+
+
+@21-24 [a=fn step_five(value: i32) -> i32 {,b=doubled_five + 5]
 Two lines are enough here.
-The colour still identifies the block.
+The colour still identifies the binding.
 
-@61-65
 
-@66-100
-This block covers the first hundred lines.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
+@26-29 [a=fn step_six(value: i32) -> i32 {,b=doubled_six + 6]
+This block covers the sixth helper.
+It shows that a normal block opens without any review dialog.
+The anchor text is stored on the hidden marker line.
 
-@101-110
-Another brief comment.
 
-@111-115
-This block covers a narrow source range.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
+@31-34 [a=fn step_seven(value: i32) -> i32 {,b=doubled_seven + 7]
+A narrow range with a unique start and end anchor.
 
-@116-150
-This block covers a middle stretch of generated functions.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
 
-@151-160
+@36-39 [a=fn step_eight(value: i32) -> i32 {,b=doubled_eight + 8]
+The last helper.
+The anchor survives renumbering elsewhere in the file.
 
-@161-165
-Only a couple of lines for this one.
 
-@166-200
-This block covers another batch of steps.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-
-@201-210
-Terse on purpose.
-
-@211-215
-
-@216-250
-This block covers the middle of the source.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-
-@251-260
-This block covers a long comment over ten source lines.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-
-@261-265
-Just one line.
-
-@266-300
-This block covers a short-but-not-empty block.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-
-@301-310
-
-@311-315
-A pair of lines, no more.
-
-@316-350
-This block covers a wide range of steps.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-
-@351-360
-Minimal text for a medium source range.
-
-@361-365
-
-@366-400
-This block covers the last third before the final run.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-
-@401-410
-This block covers the longest comment in the example.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-
-@411-415
-One short sentence.
-
-@416-450
-This block covers the final group of helpers.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-
-@451-460
-
-@461-465
-Two lines for the last tiny range.
-
-@466-495
-This block covers the functions just before main.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-The gutter still numbers the physical lines, including the blank ones left by markers.
-Scrolling either pane maps the centre of the view through the linked source ranges.
-That makes it easy to check that the curves and the highlights remain aligned.
-This block is deliberately long so the right pane has plenty of text to scroll through.
-The marker line itself is hidden in the viewer, while its line position is preserved.
-Colour tells you which source lines this text belongs to without showing the @ marker.
-
-@496-500
-The entry point.
-It calls the first and last generated steps.
-That closes the example.
-
+@41-50 [a=fn main() {,b=println!("{total}");]
+The entry point is anchored by the function signature and the print statement.
+The closing brace is deliberately outside the range because it repeats in the file.
+If the helpers are edited, this binding should still find main.

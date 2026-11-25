@@ -18,7 +18,7 @@ Comment for line 42.
 Comment for lines 88 through 91.
 ```
 
-`@N` points at one line, `@N-M` at an inclusive range. Line numbers are 1-based. Every line up to the next marker belongs to that block. Lines that do not start with `@` are free text.
+`@N` points at one line, `@N-M` at an inclusive range. Line numbers are 1-based. Every line up to the next marker belongs to that block. Lines that do not start with `@` are free text. Markers may also carry source anchors, for example `@1-4 [a=fn step_one(value: i32) -> i32 {,b=doubled_one + 1]`; Commentor uses them to find blocks again after line numbers change and asks for human review before applying fixes.
 
 Markers stay in the `.cmt` file, but the right pane hides the `@` lines while keeping their line positions. The example adds blank lines between sections; those sep lines stay untinted, so each comment is visually separated while the gutter still counts every physical line. Edits are mapped back into the file with the markers preserved.
 
