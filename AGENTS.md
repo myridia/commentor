@@ -75,7 +75,7 @@ A classic top menu in a `TopBottomPanel`, built with `egui::menu::bar` + `ui.men
 - `make_deb/src/` — packaging source; `Cargo.toml` and `src` are symlinks to the repo root. `debian/rules` sets `CARGO_TARGET_DIR` to its own `target/`, and `debian/install` copies `target/release/commentor` into `/usr/bin`. The `.deb` lands in `make_deb/` where `debian.yml` expects it. No embedded assets in commentor, so no `pages`/`.cargo` symlinks are needed.
 
 ## Project page
-- `pages/public/` — GitHub Pages site: `index.html`, `style.css`, `favicon.ico` and `img/` (logo, icon, screenshot). `pages.yml` deploys on dispatch or via `control.yml`.
+- `pages/public/` — GitHub Pages site: `index.html`, `style.css`, `favicon.ico` and `img/` (logo, icon, screenshot). `pages.yml` uploads the site in a `build` job and deploys it in a `deploy` job; `control.yml` calls it.
 
 ## Conventions
 - No comments in code unless asked.
