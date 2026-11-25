@@ -4,7 +4,7 @@
 
 A two-pane viewer for comments that live outside the source file.
 
-`foo.rs` is paired with `.comments.d/foo.rs.cmt` in the same directory. The left pane shows the source, the right pane shows the comment file, and a link strip draws curves between the comment blocks and the source lines they describe.
+`foo.rs` is paired with `.comments.d/foo.rs.cmt` in the same directory; see `convention.md` for the full rule. The left pane shows the source, the right pane shows the comment file, and a link strip draws curves between the comment blocks and the source lines they describe.
 
 ## Marker syntax
 

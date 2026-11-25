@@ -10,7 +10,7 @@ Commentor shows comments that are stored outside source files. A source file `fo
 - No async runtime, no database
 
 ## Structure
-- `src/lib.rs` — file pairing, marker parsing, block mapping, scroll mapping, marker hiding/restoring and comment spacing
+- `src/lib.rs` — file pairing, bulk comment-file creation, marker parsing, block mapping, scroll mapping, marker hiding/restoring and comment spacing
 - `src/main.rs` — eframe app, classic top menu, themes, painting, panes, link strip, open/save
 - `src/icon.rs` — hardcoded 32×32 RGBA window icon rasterized from `commentor.svg`, applied through `IconData` + `ViewportBuilder::with_icon` in `main()`
 - `src/highlight.rs` — lightweight syntax highlighter for the source pane (language detection + token palettes), used through `TextEdit::layouter`
@@ -18,13 +18,15 @@ Commentor shows comments that are stored outside source files. A source file `fo
 - `example/hello.rs` + `example/.comments.d/hello.rs.cmt` — simple standalone example used for testing
 - `src/.comments.d/*.cmt` — comments on commentor's own source; kept as samples, not used by the example task
 - `vocabulary.md` — shared names for the GUI parts (panes, gutter, tint band, link strip) and program parts (blocks, markers, bindings, settings); use its terms when discussing changes
+- `convention.md` — canonical description of the `.comments.d/<full-source-filename>.cmt` pair path and marker syntax
 - `ask.sh` / `ask.d/` — task menu; each task is a script with `# id:`, `# group:` and `# desc:` headers
+- `ask.d/make_comments.sh` — creates a `.comments.d/<source>.cmt` placeholder for each `.rs` file that does not have one; existing comment files are left alone
 - `.github/workflows/` — build pipelines copied from couchy (Linux, Debian, Windows, macOS Intel + Silicon, FreeBSD, MSIX, Pages)
 - `commentor.svg` — README logo
 - GPL-3.0, repo `github/commentor`
 
 ## Pair and marker rules
-- Pair path: `<dir>/.comments.d/<full-source-filename>.cmt` (append `.cmt`, keep the original extension).
+- Pair path: `<dir>/.comments.d/<full-source-filename>.cmt` (append `.cmt`, keep the original extension). Canonical details live in `convention.md`.
 - Marker: `@N` or `@N-M` on its own line, 1-based and inclusive.
 - Text from a marker up to the next marker belongs to that block; other lines are free text.
 - Markers are stored in the `.cmt` file but hidden in the right pane; `hide_markers` blanks them without changing line numbers, and `restore_markers` puts them back after edits.
@@ -50,7 +52,8 @@ cargo run -- path/to/foo.rs
 - 3 Run example — `cargo run -- example/hello.rs`
 - 4 Check — `cargo check`
 - 5 Clean — `cargo clean`
-- 6 Comments — list the `.cmt` files
+- 6 Comments — list all `.cmt` files
+- 7 Make comment files — create missing `.cmt` placeholders for `.rs` files
 
 ## Menu
 A classic top menu in a `TopBottomPanel`, built with `egui::menu::bar` + `ui.menu_button` (same pattern as ct):
@@ -58,6 +61,7 @@ A classic top menu in a `TopBottomPanel`, built with `egui::menu::bar` + `ui.men
 - **File** — Open Source..., Save Comments, Exit
 - **Edit** — Undo, Redo, Cut, Copy, Paste, Select All, Delete; the same commands are on each pane's right-click menu. Keyboard shortcuts work directly in the focused `TextEdit`. Copy and Select All also work in the read-only source pane; the other Edit actions are disabled there.
 - **View** — Next Link, Previous Link, Reset Scroll
+- **Tools** — Create Comment Files... — opens a folder dialog and creates missing `.cmt` placeholders for `.rs` files under the chosen directory
 - **Settings** — Remember last file, Show line numbers, Wrap comment text, Show link block colors, Theme (dark/light), Colors (blue/green/purple/warm/pink/neutral), Syntax highlighting, Language (auto plus 14 languages), Highlight palette (default/vivid/soft), Space lines, Source font, Comment font, Open Settings File, Save Settings Now
 - **Help** — Project Page, About
 

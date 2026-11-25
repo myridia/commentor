@@ -4,7 +4,7 @@
 
 A two-pane viewer for comments that live outside the source file.
 
-`foo.rs` is paired with `.comments.d/foo.rs.cmt` in the same directory. The wider left pane shows the source, the right pane shows the comment file, and a narrow link strip draws curves between the comment blocks and the source lines they describe.
+`foo.rs` is paired with `.comments.d/foo.rs.cmt` in the same directory; see `convention.md` for the full rule. The wider left pane shows the source, the right pane shows the comment file, and a narrow link strip draws curves between the comment blocks and the source lines they describe.
 
 ## Marker syntax
 
@@ -26,6 +26,7 @@ Markers stay in the `.cmt` file, but the right pane hides the `@` lines while ke
 
 - Open a source file with **File → Open Source...** or pass it as the first argument. The last opened file is saved in `~/.commentor/config.toml` and reopened on the next launch; a command-line path wins.
 - Save the comment pane with **File → Save Comments** or `Ctrl+S`.
+- **Tools → Create Comment Files...** opens a folder dialog and creates missing `.cmt` placeholders for `.rs` files under the chosen directory; existing comment files are left alone.
 - Use the usual editing commands in either pane: `Ctrl+C` / `Ctrl+X` / `Ctrl+V` / `Ctrl+A`, plus `Ctrl+Z` / `Ctrl+Y`. The **Edit** menu and the right-click context menu offer the same actions. Copy and Select All also work in the read-only source pane; the other Edit actions are disabled there.
 - Click a highlighted line or a curve to select a link; both panes scroll together through the mapped blocks. **View → Next/Previous Link** walks the bindings.
 - Each code↔comment binding has its own tint in both panes and **two** cubic bezier curves in the strip. Each curve ends in a small filled triangle that points into the pane like a comic speech balloon tail, so the top and bottom of a block are visibly separate. The selected binding is brighter and thicker. Turn off **Settings → Show link block colors** to remove only the filled backgrounds; the pane outlines, curves and tails still show as a single border.
@@ -53,7 +54,7 @@ cargo run -- example/hello.rs
 
 ## Build and run
 
-`./ask.sh` opens the task menu. Its tasks live in `ask.d/`; each is also runnable directly, for example `sh ask.d/run_example.sh`.
+`./ask.sh` opens the task menu. Its tasks live in `ask.d/`; each is also runnable directly, for example `sh ask.d/run_example.sh`. Task 7 walks the Rust source files and creates any missing `.comments.d/<source>.cmt` placeholders; existing comment files are left alone.
 
 ```bash
 cargo build --release

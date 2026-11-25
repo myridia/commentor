@@ -3,7 +3,8 @@ mod highlight;
 mod icon;
 
 use commentor::{
-    hide_markers, map_line, normalize_spacing, pair_path, parse_blocks, restore_markers, Block,
+    create_comment_files, hide_markers, map_line, normalize_spacing, pair_path, parse_blocks,
+    restore_markers, Block,
 };
 use config::AppConfig;
 use eframe::egui;
@@ -595,6 +596,17 @@ impl App {
         }
     }
 
+    fn make_comment_files(&mut self, root: PathBuf) {
+        match create_comment_files(&root) {
+            Ok(0) => self.status = format!("no missing comment files under {}", root.display()),
+            Ok(count) => self.status = format!(
+                "created {count} comment file(s) under {}",
+                root.display()
+            ),
+            Err(error) => self.status = format!("create comment files failed: {error}"),
+        }
+    }
+
     fn refresh(&mut self) {
         let count = self.source.lines().count();
         self.blocks = parse_blocks(&self.comments, count);
@@ -794,6 +806,16 @@ impl eframe::App for App {
                         self.prev_left = 0.0;
                         self.prev_right = 0.0;
                         self.scroll_from = 0;
+                        ui.close_menu();
+                    }
+                }).inner.is_some();
+                menu_open |= ui.menu_button("Tools", |ui| {
+                    if ui.button("Create Comment Files...").clicked() {
+                        if let Some(root) = FileDialog::new().pick_folder() {
+                            self.make_comment_files(root);
+                        } else {
+                            self.status = "create comment files cancelled".to_string();
+                        }
                         ui.close_menu();
                     }
                 }).inner.is_some();

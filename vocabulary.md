@@ -6,7 +6,7 @@ Shared names for the parts of the commentor GUI and the code behind them. Use th
 
 ```
 ┌──────────────────────────── menu bar ────────────────────────────┐
-│ File   Edit   View   Settings   Help                             │
+│ File   Edit   View   Tools   Settings   Help                     │
 ├──────────────────┬───────────┬───────────────────────────────────┤
 │  source pane     │ link strip│  comment pane                     │
 │ ┌──────┬─────────┤           │ ┌──────┬──────────────────────────┐ │
@@ -23,8 +23,9 @@ Shared names for the parts of the commentor GUI and the code behind them. Use th
 | Name | What it is | Where it lives |
 | --- | --- | --- |
 | **Window** | The native viewport opened by eframe, titled `commentor`, default 1100 × 760. | `main`, `main.rs` |
-| **Menu bar** | The classic top panel with the `File`, `Edit`, `View`, `Settings` and `Help` menus. | `update`, `TopBottomPanel::top("menu_bar")` |
+| **Menu bar** | The classic top panel with the `File`, `Edit`, `View`, `Tools`, `Settings` and `Help` menus. | `update`, `TopBottomPanel::top("menu_bar")` |
 | **Edit menu** | Undo, Redo, Cut, Copy, Paste, Select All and Delete for the focused pane. The same commands are on each pane's right-click menu, and the usual keyboard shortcuts work directly in the `TextEdit`. Copy and Select All also work in the read-only source pane; the other Edit actions are disabled there. | `editor_menu_item`, `editor_context_menu`, `run_editor_action` |
+| **Tools menu** | Create Comment Files... — opens a folder dialog, then makes a starter `.cmt` for each `.rs` file that has none under the chosen directory. | `App::make_comment_files`, `create_comment_files` |
 | **Clipboard** | The last text copied or cut from either pane. Keyboard paste still uses the system clipboard; menu paste reuses this remembered text. | `App::clipboard`, `egui::Event::Paste` |
 | **Status bar** | The bottom panel that shows the last action or error, e.g. `opened …`, `saved …`, `settings saved`. | `update`, `TopBottomPanel::bottom("status_bar")` |
 | **Workspace** | The central area between the two bars that holds the panes and the link strip. | `update`, `CentralPanel` |

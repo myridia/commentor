@@ -14,6 +14,43 @@ pub fn pair_path(path: &Path) -> PathBuf {
     dir.join(".comments.d").join(format!("{name}.cmt"))
 }
 
+pub fn create_comment_files(root: &Path) -> std::io::Result<usize> {
+    let mut created = 0;
+    let mut dirs = vec![root.to_path_buf()];
+    while let Some(dir) = dirs.pop() {
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let file_type = entry.file_type()?;
+            let path = entry.path();
+            if file_type.is_dir() {
+                let name = entry.file_name();
+                let name = name.to_string_lossy();
+                if matches!(name.as_ref(), "target" | "make_deb" | ".comments.d" | ".git") {
+                    continue;
+                }
+                dirs.push(path);
+            } else if file_type.is_file()
+                && path.extension().and_then(|value| value.to_str()) == Some("rs")
+            {
+                let pair = pair_path(&path);
+                if pair.exists() {
+                    continue;
+                }
+                if let Some(parent) = pair.parent() {
+                    std::fs::create_dir_all(parent)?;
+                }
+                let relative = path.strip_prefix(root).unwrap_or(&path);
+                std::fs::write(
+                    pair,
+                    format!("@1\nAdd a comment for {}.\n", relative.display()),
+                )?;
+                created += 1;
+            }
+        }
+    }
+    Ok(created)
+}
+
 pub fn parse_marker(line: &str) -> Option<(usize, usize)> {
     let rest = line.strip_prefix('@')?;
     let mut parts = rest.splitn(2, '-');
