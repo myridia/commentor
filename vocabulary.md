@@ -6,7 +6,7 @@ Shared names for the parts of the commentor GUI and the code behind them. Use th
 
 ```
 ┌──────────────────────────── menu bar ────────────────────────────┐
-│ File   Edit   View   Settings   Help                             │
+│ File   Edit   View   Tools   Settings   Help                     │
 ├──────────────────┬───────────┬───────────────────────────────────┤
 │  source pane     │ link strip│  comment pane                     │
 │ ┌──────┬─────────┤           │ ┌──────┬──────────────────────────┐ │
@@ -23,8 +23,11 @@ Shared names for the parts of the commentor GUI and the code behind them. Use th
 | Name | What it is | Where it lives |
 | --- | --- | --- |
 | **Window** | The native viewport opened by eframe, titled `commentor`, default 1100 × 760. | `main`, `main.rs` |
-| **Menu bar** | The classic top panel with the `File`, `Edit`, `View`, `Settings` and `Help` menus. | `update`, `TopBottomPanel::top("menu_bar")` |
+| **Menu bar** | The classic top panel with the `File`, `Edit`, `View`, `Tools`, `Settings` and `Help` menus. | `update`, `TopBottomPanel::top("menu_bar")` |
 | **Edit menu** | Undo, Redo, Cut, Copy, Paste, Select All and Delete for the focused pane. The same commands are on each pane's right-click menu, and the usual keyboard shortcuts work directly in the `TextEdit`. Copy and Select All also work in the read-only source pane; the other Edit actions are disabled there. | `editor_menu_item`, `editor_context_menu`, `run_editor_action` |
+| **View menu** | Next Link, Previous Link, Reload Source and Reset Scroll. Reload Source rereads the source file and reruns the alignment review. | `update`, `App::reload_source` |
+| **Tools menu** | Create Comment Files... — opens a folder dialog, scans it for extensions, then shows an extension-picker dialog before creating starter `.cmt` files for the selected types. | `MakerDialog`, `scan_extensions`, `create_comment_files` |
+| **Alignment review** | The dialog that lists moved, ambiguous and unmatched blocks after open or reload. It offers suggested ranges, candidate ranges and manual line fields; saving waits until it is applied or skipped. | `AlignmentDialog`, `apply_alignment` |
 | **Clipboard** | The last text copied or cut from either pane. Keyboard paste still uses the system clipboard; menu paste reuses this remembered text. | `App::clipboard`, `egui::Event::Paste` |
 | **Status bar** | The bottom panel that shows the last action or error, e.g. `opened …`, `saved …`, `settings saved`. | `update`, `TopBottomPanel::bottom("status_bar")` |
 | **Workspace** | The central area between the two bars that holds the panes and the link strip. | `update`, `CentralPanel` |
@@ -47,8 +50,10 @@ Shared names for the parts of the commentor GUI and the code behind them. Use th
 | **Source file** | The file being annotated, e.g. `example/hello.rs`. Opened read-only and never edited by commentor. | `App::source`, `App::source_path` |
 | **Comment file** | The `.cmt` file that stores the comment blocks, e.g. `example/.comments.d/hello.rs.cmt`. Editable in the right pane and written on save. | `App::comments`, `App::comment_path` |
 | **Pair path** | The rule that maps `foo.rs` to `.comments.d/foo.rs.cmt`: keep the full filename and append `.cmt`. | `pair_path`, `lib.rs` |
-| **Marker line** | A line that is exactly `@N` or `@N-M` (1-based, inclusive). It begins a block and is hidden in the comment pane. | `parse_marker`, `is_marker_line` |
+| **Marker line** | A line starting with `@N` or `@N-M` (1-based, inclusive), optionally followed by anchors such as `[a=fn main() {,b=println!("{total}");]`. It begins a block and is hidden in the comment pane. | `parse_marker`, `parse_marker_anchors`, `is_marker_line` |
 | **Marker** | The range on a marker line, stored internally as 0-based start with an exclusive end. | `parse_marker` |
+| **Anchor** | Trimmed source text stored on the marker line. `a` marks the first line of a block and `b` marks the last line of a range. Commentor uses anchors to find blocks after line numbers change. | `Block::anchor`, `Block::end_anchor`, `analyze_alignment` |
+| **Alignment issue** | A block whose anchor moved, is ambiguous or has no match. It carries the marked range and the candidate ranges shown in the alignment review. | `AlignmentIssue`, `analyze_alignment` |
 | **Block** | One comment section: a source range plus the comment-text range that belongs to it. | `Block` in `lib.rs` |
 | **Binding / link** | The pairing inside a block between its source lines and its comment lines. Each binding gets its own shade from `LINK_COLORS`; its index is also the thing `Next Link` moves through. | `Block`, `LINK_COLORS` |
 | **Comment body** | The free text after a marker, up to the next marker. This is what the user types. | `Block::cmt_start..cmt_end` |

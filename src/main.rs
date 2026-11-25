@@ -3,7 +3,9 @@ mod highlight;
 mod icon;
 
 use commentor::{
-    hide_markers, map_line, normalize_spacing, pair_path, parse_blocks, restore_markers, Block,
+    analyze_alignment, create_comment_files, hide_markers, map_line, normalize_spacing, pair_path,
+    restore_markers, rewrite_markers, scan_extensions, set_block_range, AlignmentIssue,
+    AlignmentKind, Block,
 };
 use config::AppConfig;
 use eframe::egui;
@@ -268,6 +270,29 @@ fn apply_theme(ctx: &egui::Context, config: &AppConfig) {
     ctx.set_visuals(visuals);
 }
 
+struct MakerExtension {
+    name: String,
+    count: usize,
+    selected: bool,
+}
+
+struct MakerDialog {
+    root: PathBuf,
+    extensions: Vec<MakerExtension>,
+}
+
+struct AlignmentChoice {
+    issue: AlignmentIssue,
+    apply: bool,
+    choice: Option<usize>,
+    manual_start: String,
+    manual_end: String,
+}
+
+struct AlignmentDialog {
+    choices: Vec<AlignmentChoice>,
+}
+
 #[derive(Default)]
 struct App {
     source: String,
@@ -285,6 +310,8 @@ struct App {
     focused_editor: Option<egui::Id>,
     clipboard: String,
     config: AppConfig,
+    maker: Option<MakerDialog>,
+    alignment: Option<AlignmentDialog>,
 }
 
 #[derive(Default, Clone)]
@@ -568,8 +595,17 @@ impl App {
                 let comments = fs::read_to_string(&pair).unwrap_or_default();
                 self.comments = normalize_spacing(&comments, self.config.space_lines);
                 self.comment_path = Some(pair);
-                self.status = format!("opened {}", path.display());
-                self.refresh();
+                let issues = self.refresh();
+                if issues.is_empty() {
+                    self.status = format!("opened {}", path.display());
+                } else {
+                    self.status = format!(
+                        "opened {}; {} alignment issue(s) need review",
+                        path.display(),
+                        issues.len()
+                    );
+                    self.alignment = Some(build_alignment_dialog(issues));
+                }
                 self.remember_last_file();
             }
             Err(error) => {
@@ -579,6 +615,10 @@ impl App {
     }
 
     fn save(&mut self) {
+        if self.alignment.is_some() {
+            self.status = "review comment alignment before saving".to_string();
+            return;
+        }
         let Some(path) = self.comment_path.clone() else {
             self.status = "no file open".to_string();
             return;
@@ -589,20 +629,89 @@ impl App {
                 return;
             }
         }
-        match fs::write(&path, &self.comments) {
-            Ok(()) => self.status = format!("saved {}", path.display()),
+        let canonical = rewrite_markers(&self.comments, &self.blocks);
+        match fs::write(&path, &canonical) {
+            Ok(()) => {
+                self.comments = canonical;
+                self.status = format!("saved {}", path.display());
+            }
             Err(error) => self.status = format!("save failed: {error}"),
         }
     }
 
-    fn refresh(&mut self) {
-        let count = self.source.lines().count();
-        self.blocks = parse_blocks(&self.comments, count);
+    fn reload_source(&mut self) {
+        let Some(path) = self.source_path.clone() else {
+            self.status = "no file open".to_string();
+            return;
+        };
+        match fs::read_to_string(&path) {
+            Ok(text) => {
+                self.source = text;
+                let issues = self.refresh();
+                if issues.is_empty() {
+                    self.status = format!("reloaded {}", path.display());
+                } else {
+                    self.status = format!(
+                        "reloaded {}; {} alignment issue(s) need review",
+                        path.display(),
+                        issues.len()
+                    );
+                    self.alignment = Some(build_alignment_dialog(issues));
+                }
+            }
+            Err(error) => self.status = format!("reload failed: {error}"),
+        }
+    }
+
+    fn apply_alignment(&mut self) {
+        let Some(dialog) = self.alignment.take() else {
+            return;
+        };
+        let source = self.source.clone();
+        let mut applied = 0;
+        for choice in dialog.choices {
+            if !choice.apply {
+                continue;
+            }
+            let range = choice
+                .choice
+                .and_then(|index| choice.issue.candidates.get(index).copied())
+                .or_else(|| parse_range_input(&choice.manual_start, &choice.manual_end));
+            if let Some(range) = range {
+                if let Some(block) = self.blocks.get_mut(choice.issue.block) {
+                    set_block_range(&source, block, range);
+                    applied += 1;
+                }
+            }
+        }
+        if applied == 0 {
+            self.status = "no alignment fixes applied".to_string();
+            return;
+        }
+        self.comments = rewrite_markers(&self.comments, &self.blocks);
+        self.status = format!("applied {applied} alignment fix(es)");
+    }
+
+    fn make_comment_files(&mut self, root: PathBuf, extensions: Vec<String>) {
+        match create_comment_files(&root, &extensions) {
+            Ok(0) => self.status = format!("no missing comment files under {}", root.display()),
+            Ok(count) => self.status = format!(
+                "created {count} comment file(s) under {}",
+                root.display()
+            ),
+            Err(error) => self.status = format!("create comment files failed: {error}"),
+        }
+    }
+
+    fn refresh(&mut self) -> Vec<AlignmentIssue> {
+        let review = analyze_alignment(&self.source, &self.comments);
+        self.blocks = review.blocks;
         if let Some(index) = self.selected {
             if index >= self.blocks.len() {
                 self.selected = None;
             }
         }
+        review.issues
     }
 
     fn remember_last_file(&mut self) {
@@ -631,7 +740,7 @@ impl App {
         }
         self.config.space_lines = value;
         self.comments = normalize_spacing(&self.comments, value);
-        self.refresh();
+        let _ = self.refresh();
         self.save_settings();
     }
 
@@ -687,6 +796,48 @@ fn open_target(target: &str) {
     let _ = std::process::Command::new("open").arg(target).spawn();
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     let _ = std::process::Command::new("xdg-open").arg(target).spawn();
+}
+
+fn parse_range_input(start: &str, end: &str) -> Option<(usize, usize)> {
+    let start = start.trim().parse().ok()?;
+    let end = end.trim().parse().ok()?;
+    if start == 0 || end < start {
+        None
+    } else {
+        Some((start, end))
+    }
+}
+
+fn alignment_kind_label(kind: AlignmentKind) -> &'static str {
+    match kind {
+        AlignmentKind::Drifted => "moved",
+        AlignmentKind::Ambiguous => "ambiguous",
+        AlignmentKind::Missing => "needs a line",
+    }
+}
+
+fn build_alignment_dialog(issues: Vec<AlignmentIssue>) -> AlignmentDialog {
+    let choices = issues
+        .into_iter()
+        .map(|issue| {
+            let apply = matches!(issue.kind, AlignmentKind::Drifted);
+            let choice = if issue.candidates.is_empty() {
+                None
+            } else {
+                Some(0)
+            };
+            let manual_start = issue.current.0.to_string();
+            let manual_end = issue.current.1.to_string();
+            AlignmentChoice {
+                issue,
+                apply,
+                choice,
+                manual_start,
+                manual_end,
+            }
+        })
+        .collect();
+    AlignmentDialog { choices }
 }
 
 impl eframe::App for App {
@@ -788,12 +939,49 @@ impl eframe::App for App {
                         self.select_relative(-1);
                         ui.close_menu();
                     }
+                    if ui.button("Reload Source").clicked() {
+                        self.reload_source();
+                        ui.close_menu();
+                    }
                     if ui.button("Reset Scroll").clicked() {
                         self.left_offset = 0.0;
                         self.right_offset = 0.0;
                         self.prev_left = 0.0;
                         self.prev_right = 0.0;
                         self.scroll_from = 0;
+                        ui.close_menu();
+                    }
+                }).inner.is_some();
+                menu_open |= ui.menu_button("Tools", |ui| {
+                    if ui.button("Create Comment Files...").clicked() {
+                        if let Some(root) = FileDialog::new().pick_folder() {
+                            match scan_extensions(&root) {
+                                Ok(extensions) if !extensions.is_empty() => {
+                                    self.maker = Some(MakerDialog {
+                                        root,
+                                        extensions: extensions
+                                            .into_iter()
+                                            .map(|(name, count)| {
+                                                let selected = name == "rs";
+                                                MakerExtension {
+                                                    name,
+                                                    count,
+                                                    selected,
+                                                }
+                                            })
+                                            .collect(),
+                                    });
+                                }
+                                Ok(_) => {
+                                    self.status = format!("no files found under {}", root.display())
+                                }
+                                Err(error) => {
+                                    self.status = format!("scan failed: {error}")
+                                }
+                            }
+                        } else {
+                            self.status = "create comment files cancelled".to_string();
+                        }
                         ui.close_menu();
                     }
                 }).inner.is_some();
@@ -982,7 +1170,7 @@ impl eframe::App for App {
                 }).inner.is_some();
                 menu_open |= ui.menu_button("Help", |ui| {
                     if ui.button("Project Page").clicked() {
-                        open_target("https://github.com/myridia/commentor");
+                        open_target("https://commentor.myridia.com/");
                         ui.close_menu();
                     }
                     if ui.button("About").clicked() {
@@ -993,6 +1181,162 @@ impl eframe::App for App {
             });
             if menu_open { if let Some(id) = self.focused_editor { ctx.memory_mut(|memory| memory.request_focus(id)); } }
         });
+
+        let mut close_maker = false;
+        let mut make_action = None;
+        let mut empty_selection = false;
+        if self.maker.is_some() {
+            let root_label = self
+                .maker
+                .as_ref()
+                .map(|maker| maker.root.display().to_string())
+                .unwrap_or_default();
+            egui::Window::new("Create Comment Files")
+                .collapsible(false)
+                .resizable(false)
+                .show(ctx, |ui| {
+                    ui.label(format!("Project: {root_label}"));
+                    ui.label("Select file extensions to comment:");
+                    if ui.button("Select all").clicked() {
+                        if let Some(maker) = self.maker.as_mut() {
+                            for item in &mut maker.extensions {
+                                item.selected = true;
+                            }
+                        }
+                    }
+                    if ui.button("Clear").clicked() {
+                        if let Some(maker) = self.maker.as_mut() {
+                            for item in &mut maker.extensions {
+                                item.selected = false;
+                            }
+                        }
+                    }
+                    egui::ScrollArea::vertical().max_height(220.0).show(ui, |ui| {
+                        if let Some(maker) = self.maker.as_mut() {
+                            for item in &mut maker.extensions {
+                                ui.checkbox(
+                                    &mut item.selected,
+                                    format!("{} ({})", item.name, item.count),
+                                );
+                            }
+                        }
+                    });
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        if ui.button("Create").clicked() {
+                            if let Some(maker) = self.maker.as_ref() {
+                                let selected: Vec<String> = maker
+                                    .extensions
+                                    .iter()
+                                    .filter(|item| item.selected)
+                                    .map(|item| item.name.clone())
+                                    .collect();
+                                if selected.is_empty() {
+                                    empty_selection = true;
+                                } else {
+                                    make_action = Some((maker.root.clone(), selected));
+                                    close_maker = true;
+                                }
+                            }
+                        }
+                        if ui.button("Cancel").clicked() {
+                            close_maker = true;
+                        }
+                    });
+                });
+        }
+        if close_maker {
+            self.maker = None;
+        }
+        if empty_selection {
+            self.status = "no extensions selected".to_string();
+        }
+        if let Some((root, extensions)) = make_action {
+            self.make_comment_files(root, extensions);
+        }
+
+        let mut apply_alignment_clicked = false;
+        let mut select_all_alignment = false;
+        let mut skip_alignment = false;
+        if self.alignment.is_some() {
+            egui::Window::new("Comment alignment review")
+                .collapsible(false)
+                .resizable(true)
+                .show(ctx, |ui| {
+                    ui.label(
+                        "Commentor found comment blocks whose markers may not match the source. Review the fixes before saving.",
+                    );
+                    egui::ScrollArea::vertical().max_height(320.0).show(ui, |ui| {
+                        if let Some(dialog) = self.alignment.as_mut() {
+                            for choice in &mut dialog.choices {
+                                ui.horizontal(|ui| {
+                                    ui.checkbox(
+                                        &mut choice.apply,
+                                        format!("Block {}", choice.issue.block + 1),
+                                    );
+                                    ui.label(alignment_kind_label(choice.issue.kind));
+                                    ui.label(format!(
+                                        "marked {}-{}",
+                                        choice.issue.current.0, choice.issue.current.1
+                                    ));
+                                });
+                                ui.label(&choice.issue.message);
+                                if choice.issue.candidates.is_empty() {
+                                    ui.horizontal(|ui| {
+                                        ui.label("Line:");
+                                        ui.add(
+                                            egui::TextEdit::singleline(&mut choice.manual_start)
+                                                .desired_width(56.0),
+                                        );
+                                        ui.label("to");
+                                        ui.add(
+                                            egui::TextEdit::singleline(&mut choice.manual_end)
+                                                .desired_width(56.0),
+                                        );
+                                    });
+                                } else {
+                                    let candidates = choice.issue.candidates.clone();
+                                    for (index, range) in candidates.iter().enumerate() {
+                                        ui.radio_value(
+                                            &mut choice.choice,
+                                            Some(index),
+                                            format!("lines {}-{}", range.0, range.1),
+                                        );
+                                    }
+                                }
+                                ui.separator();
+                            }
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        if ui.button("Apply selected").clicked() {
+                            apply_alignment_clicked = true;
+                        }
+                        if ui.button("Select all suggested").clicked() {
+                            select_all_alignment = true;
+                        }
+                        if ui.button("Skip all").clicked() {
+                            skip_alignment = true;
+                        }
+                    });
+                });
+        }
+        if select_all_alignment {
+            if let Some(dialog) = self.alignment.as_mut() {
+                for choice in &mut dialog.choices {
+                    if choice.choice.is_some() {
+                        choice.apply = true;
+                    }
+                }
+            }
+        }
+        if skip_alignment {
+            self.alignment = None;
+            self.status = "alignment review skipped".to_string();
+        }
+        if apply_alignment_clicked {
+            self.apply_alignment();
+        }
 
         egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
             ui.label(&self.status);
@@ -1325,7 +1669,7 @@ impl eframe::App for App {
 
             if comments_edit != comments_display {
                 self.comments = restore_markers(&self.comments, &comments_edit);
-                self.refresh();
+                let _ = self.refresh();
             }
         });
 

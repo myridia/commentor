@@ -17,8 +17,8 @@
     <nav>
       <a href="#features">Features</a>
       <a href="#use">How to use</a>
-      <a href="#start">Quick start</a>
-      <a href="https://github.com/veto8/commentor">GitHub</a>
+      <a href="#get">Get it</a>
+      <a href="https://github.com/myridia/commentor">GitHub</a>
     </nav>
   </header>
 
@@ -34,8 +34,8 @@
           the right, and follow the curves in the link strip between them.
         </p>
         <div class="actions">
-          <a class="button primary" href="https://github.com/veto8/commentor/releases/latest">Download latest</a>
-          <a class="button" href="https://github.com/veto8/commentor">View source</a>
+          <a class="button primary" href="https://github.com/myridia/commentor/releases/latest">Download latest</a>
+          <a class="button" href="https://github.com/myridia/commentor">View source</a>
         </div>
       </div>
     </section>
@@ -50,6 +50,10 @@
         <article>
           <h3>Marker syntax</h3>
           <p>Blocks start with <code>@N</code> for one line or <code>@N-M</code> for an inclusive range. Line numbers are 1-based; everything up to the next marker belongs to that block.</p>
+        </article>
+        <article>
+          <h3>Anchor-aware alignment</h3>
+          <p>Markers can remember the source lines they describe. After code edits, Commentor finds moved, ambiguous or missing anchors and asks you to review the fix before saving.</p>
         </article>
         <article>
           <h3>Link strip</h3>
@@ -81,7 +85,7 @@
         </article>
         <article>
           <h3>Keyboard &amp; menus</h3>
-          <p>Classic File / Edit / View / Settings / Help menus, right-click editing on each pane, and shortcuts such as <code>Ctrl+S</code> to save comments.</p>
+          <p>Classic File / Edit / View / Tools / Settings / Help menus, right-click editing on each pane, and shortcuts such as <code>Ctrl+S</code> to save comments.</p>
         </article>
       </div>
     </section>
@@ -92,24 +96,35 @@
         <li>Open a source file with <strong>File → Open Source...</strong> or pass it as the first argument: <code>cargo run -- path/to/foo.rs</code>.</li>
         <li>Add a <code>.comments.d/&lt;filename&gt;.cmt</code> file beside it and write blocks starting with <code>@N</code> or <code>@N-M</code>.</li>
         <li>Edit the right pane; the source pane stays read-only. Use the link strip or <strong>Next / Previous Link</strong> to move between blocks.</li>
-        <li>Save with <strong>File → Save Comments</strong> or <code>Ctrl+S</code>. Markers are preserved.</li>
+        <li>Edit the source elsewhere? Use <strong>View → Reload Source</strong>. If a block drifted, review the suggested lines in the alignment dialog.</li>
+        <li>Save with <strong>File → Save Comments</strong> or <code>Ctrl+S</code>. Markers are preserved, and saving waits while an alignment review is open.</li>
       </ol>
       <p class="hint">Try the bundled example: <code>cargo run -- example/hello.rs</code>.</p>
     </section>
 
+    <section class="section" id="get">
+      <h2>Get Commentor</h2>
+      <p>Pick up a packaged build from GitHub Releases, or clone the source and build it yourself.</p>
+      <div class="actions">
+        <a class="button primary" href="https://github.com/myridia/commentor/releases">All releases</a>
+        <a class="button" href="https://github.com/myridia/commentor/releases/latest">Latest release</a>
+        <a class="button" href="https://github.com/myridia/commentor">Source on GitHub</a>
+      </div>
+    </section>
+
     <section class="section" id="start">
       <h2>Quick start</h2>
-      <pre><code>git clone https://github.com/veto8/commentor.git
+      <pre><code>git clone https://github.com/myridia/commentor.git
 cd commentor
 cargo build --release
 cargo run -- example/hello.rs</code></pre>
       <p>Built with Rust and eframe/egui 0.28.1 (wgpu). No database or async runtime required.</p>
-      <p class="hint">Full details: <a href="https://github.com/veto8/commentor#readme">README.md</a>.</p>
+      <p class="hint">Full details: <a href="https://github.com/myridia/commentor#readme">README.md</a>.</p>
     </section>
   </main>
 
   <footer>
-    commentor · <a href="https://github.com/veto8/commentor">veto8/commentor</a>
+    commentor · <a href="https://github.com/myridia/commentor">myridia/commentor</a>
   </footer>
 </body>
 </html>
