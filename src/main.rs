@@ -961,10 +961,13 @@ impl eframe::App for App {
                                         root,
                                         extensions: extensions
                                             .into_iter()
-                                            .map(|(name, count)| MakerExtension {
-                                                name,
-                                                count,
-                                                selected: name == "rs",
+                                            .map(|(name, count)| {
+                                                let selected = name == "rs";
+                                                MakerExtension {
+                                                    name,
+                                                    count,
+                                                    selected,
+                                                }
                                             })
                                             .collect(),
                                     });

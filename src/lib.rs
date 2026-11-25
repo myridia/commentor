@@ -220,8 +220,8 @@ fn clean_anchor(value: Option<String>) -> Option<String> {
         .filter(|anchor| !anchor.is_empty())
 }
 
-fn anchor_text(line: Option<&str>) -> Option<String> {
-    clean_anchor(line.map(|value| value.to_string()))
+fn anchor_text(line: Option<&&str>) -> Option<String> {
+    clean_anchor(line.map(|value| (*value).to_string()))
 }
 
 fn display_range(range: (usize, usize)) -> (usize, usize) {
