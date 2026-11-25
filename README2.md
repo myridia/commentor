@@ -65,4 +65,4 @@ GitHub Actions mirror couchy's release pipelines in `.github/workflows/`:
 - `macos_release.yml` — Intel (`x86_64-apple-darwin`, `macos-13`) and Apple Silicon (`aarch64-apple-darwin`, `macos-14`) binaries
 - `freebsd_release.yml` — FreeBSD (`x86_64-unknown-freebsd`) binary, built in a `vmactions/freebsd-vm@v1` VM
 
-Each workflow runs on pushes to `main`, on any tag, and via `workflow_dispatch`. All build jobs are gated to the `myridia` account and upload renamed binaries with `svenstaro/upload-release-action@v2`. Couchy's stale `hello_rust_*` upload steps are not copied.
+Each workflow runs on pushes to `main`, on any tag, and via `workflow_dispatch`. The control workflow resolves the release tag from the `tag` dispatch input, then the pushed tag, then `v0.1.0`, and passes it to each leaf workflow; leaf workflows skip uploads when no tag is available. All build jobs are gated to the `myridia` account and upload renamed binaries with `svenstaro/upload-release-action@v2`. Couchy's stale `hello_rust_*` upload steps are not copied.
